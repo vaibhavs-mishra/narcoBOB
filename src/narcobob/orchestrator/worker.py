@@ -231,6 +231,11 @@ class Worker:
 
     async def stream_activity(self) -> None:
         """Broadcast tool calls and findings written since the last poll (by any process)."""
+        # A reset empties the tables and SQLite restarts rowids at 1: rewind the cursors.
+        if self._max_rowid("tool_calls") < self._last_call_rowid:
+            self._last_call_rowid = 0
+        if self._max_rowid("findings") < self._last_finding_rowid:
+            self._last_finding_rowid = 0
         calls = self.conn.execute(
             "SELECT rowid, run_id, step_id, agent_id, tool, ok, error_code, duration_ms, wall_at"
             " FROM tool_calls WHERE rowid > ? ORDER BY rowid",

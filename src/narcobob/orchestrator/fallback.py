@@ -128,8 +128,19 @@ def clusters(cells: list[str]) -> dict[str, str]:
     return {c: names.setdefault(find(c), f"C{len(names) + 1}") for c in cells}
 
 
+def alerted_severity(alerts: list[dict[str, Any]]) -> dict[str, str]:
+    """Per cell: the highest severity among this run's alerts (what the agents review)."""
+    out: dict[str, str] = {}
+    for a in alerts:
+        if RANK.index(a["severity"]) > RANK.index(out.get(a["cell"], "NORMAL")):
+            out[a["cell"]] = a["severity"]
+    return out
+
+
 def analyst(conn: sqlite3.Connection, ctx: CallContext) -> None:
-    cells = _tool(conn, ctx, get_run_context)["cells"]
+    context = _tool(conn, ctx, get_run_context)
+    cells = context["cells"]
+    claimed = alerted_severity(context["alerts"])
     scores = {s["cell"]: s for s in _tool(conn, ctx, get_cell_scores, cells=cells)["cells"]}
     cluster_of = clusters(cells)
     findings = []
@@ -150,7 +161,8 @@ def analyst(conn: sqlite3.Connection, ctx: CallContext) -> None:
             for d in positive[:3]
         )
         narrative = (
-            f"Score {s['score']} ({s['severity']}), support {s['support']} events"
+            f"Alerted at {claimed.get(cell, s['severity'])}; now score {s['score']}"
+            f" ({s['severity']}), support {s['support']} events"
             f" ({s['confidence']} confidence). Driven by {evidence}."
             + (f" {len(hot)} adjacent cell(s) are also HIGH or above." if hot else "")
         )
@@ -162,7 +174,7 @@ def analyst(conn: sqlite3.Connection, ctx: CallContext) -> None:
                     "cluster_id": cluster_of[cell],
                     "drivers": positive,
                     "narrative": narrative[:500],
-                    "claimed_severity": s["severity"],
+                    "claimed_severity": claimed.get(cell, s["severity"]),
                 },
             }
         )

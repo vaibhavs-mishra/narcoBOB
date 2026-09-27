@@ -13,20 +13,21 @@
     82,
     90
   ],
-  "generated_at": "2026-09-27T18:16:52+00:00",
+  "generated_at": "2026-09-27T19:33:43+00:00",
   "data": "SIMULATED",
   "detection": {
     "onset_day": 62,
     "days_to_high": 4,
     "days_to_critical": 5,
-    "precision_at_5": 0.328,
+    "precision_at_5": 0.408,
     "s1_final_verdicts": [
       "CONFIRMED",
+      "DOWNGRADED",
       "REJECTED"
     ]
   },
   "baselines": {
-    "raw_overdose_rank_days_to_top5": 3,
+    "raw_overdose_rank_days_to_top5": 1,
     "raw_seizure_rank_days_to_top5": null
   },
   "decoys": {

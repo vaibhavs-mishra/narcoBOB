@@ -1,6 +1,7 @@
 import { Callout, NonIdealState, Tag } from "@blueprintjs/core";
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { api } from "../api";
 import type { Report } from "../contracts";
 import { useStore } from "../store";
@@ -27,7 +28,7 @@ export function ReportViewer() {
         <Tag minimal>{report.recommendations.length} recommendations</Tag>
         <span className="muted small mono">run {report.run_id}</span>
       </div>
-      <div className="markdown"><ReactMarkdown>{report.markdown}</ReactMarkdown></div>
+      <div className="markdown"><ReactMarkdown remarkPlugins={[remarkGfm]}>{report.markdown}</ReactMarkdown></div>
     </div>
   );
 }

@@ -1,7 +1,9 @@
-import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-})
+  // maplibre-gl ships its own web worker; Vite's dependency pre-bundling breaks the
+  // worker URL, so let it load maplibre as-is.
+  optimizeDeps: { exclude: ["maplibre-gl"] },
+});

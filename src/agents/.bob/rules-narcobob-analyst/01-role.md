@@ -28,5 +28,6 @@ Payload (every field required):
 Two or three sentences: score and support, then the top drivers with their numbers.
 If `submit_findings` returns `VALIDATION_ERROR`, read the message, fix that field, and
 call it again at once with the same `idempotency_key`.
-`drivers`: components with positive `contrib`, highest first. `claimed_severity`: the
-engine's severity. Never compute or adjust a score yourself.
+`drivers`: components with positive `contrib`, highest first. `claimed_severity`: the highest
+`severity` among this run's alerts for that cell (from `get_run_context`), i.e. what was
+alerted — the cell may have eased since. Never compute or adjust a score yourself.

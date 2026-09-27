@@ -1,4 +1,4 @@
-import { Button, Menu, MenuItem, Popover, Tag, Tooltip } from "@blueprintjs/core";
+import { Button, Menu, MenuItem, PopoverNext, Tag, Tooltip } from "@blueprintjs/core";
 import { useEffect } from "react";
 import { api } from "../api";
 import { useStore } from "../store";
@@ -74,7 +74,7 @@ export function TopBar() {
         </Tag>
         {mode === "live" && <SurgeButton />}
         {mode === "live" && (
-          <Popover
+          <PopoverNext
             placement="bottom-end"
             content={
               <Menu>
@@ -86,7 +86,7 @@ export function TopBar() {
             }
           >
             <Button minimal icon="more" aria-label="Simulation controls" />
-          </Popover>
+          </PopoverNext>
         )}
       </div>
     </header>

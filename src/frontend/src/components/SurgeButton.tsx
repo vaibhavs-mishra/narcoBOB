@@ -1,4 +1,4 @@
-import { Button, Callout, Classes, Popover } from "@blueprintjs/core";
+import { Button, Callout, Classes, PopoverNext } from "@blueprintjs/core";
 import { useState } from "react";
 import { api } from "../api";
 
@@ -24,13 +24,13 @@ export function SurgeButton() {
   };
 
   return (
-    <Popover
+    <PopoverNext
       placement="bottom-end"
       content={
         <div className="surge-pop">
           <p>
             Simulate a new cross-border supply route near the border: overdose admissions in a small
-            cluster ramp up ×3 over a week. Seizures do not change.
+            cluster quadruple over five days. Seizures do not change.
           </p>
           {error && <Callout intent="danger">{error}</Callout>}
           <div className="surge-actions">
@@ -41,6 +41,6 @@ export function SurgeButton() {
       }
     >
       <Button intent="danger" icon="warning-sign" text={done ? "SURGE INJECTED" : "INJECT SURGE"} disabled={done} />
-    </Popover>
+    </PopoverNext>
   );
 }

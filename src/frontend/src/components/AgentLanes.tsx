@@ -12,7 +12,10 @@ function Lane({ agent, lane, t0, span }: { agent: AgentId; lane: LaneState; t0: 
     <div className={`lane lane-${lane.status}`}>
       <div className="lane-head">
         <span className="lane-name">{agentLabel[agent]}</span>
-        <Tag minimal intent={STATUS_INTENT[lane.status]}>{lane.status}{lane.attempt > 1 ? ` · try ${lane.attempt}` : ""}</Tag>
+        <Tag minimal intent={STATUS_INTENT[lane.status]}>
+          {lane.status === "fallback" ? "done" : lane.status}
+          {lane.attempt > 1 ? ` · try ${lane.attempt}` : ""}
+        </Tag>
         {lane.source && (
           <Tag minimal className={`src src-${lane.source}`}>{lane.source === "bob" ? "IBM Bob" : "fallback"}</Tag>
         )}
@@ -61,7 +64,7 @@ export function AgentLanes() {
         <span className="lanes-title">Narclings</span>
         <HTMLSelect minimal value={s.run_id} onChange={(e) => focusRun(e.currentTarget.value)}
           options={order.map((id) => ({ value: id, label: `run …${id.slice(-6)} · ${runs[id]?.summary.status ?? ""}` }))} />
-        <span className="muted small">{s.cells.length} cell(s) · {Math.round((end - t0) / 1000)} s</span>
+        <span className="muted small">{s.cells.length} cell(s) · {end - t0 < 1000 ? "<1" : Math.round((end - t0) / 1000)} s</span>
         <Tag minimal intent={s.status === "DONE" ? "success" : s.status === "RUNNING" ? "primary" : s.status === "QUEUED" ? "none" : "warning"}>{s.status}</Tag>
         {run.reportReady && <Button small icon="document" text="Open brief" onClick={() => openReport(s.run_id)} />}
       </div>

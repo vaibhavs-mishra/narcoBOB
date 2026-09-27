@@ -33,12 +33,12 @@ app = FastAPI(title="NarcoBob simulator (SIMULATED data)", lifespan=lifespan)
 
 
 @app.get("/sim/status", response_model=SimStatus)
-def status() -> dict[str, Any]:
+async def status() -> dict[str, Any]:
     return streamer.status()
 
 
 @app.post("/sim/start", response_model=SimStatus)
-def start(body: SimControl | None = None) -> dict[str, Any]:
+async def start(body: SimControl | None = None) -> dict[str, Any]:
     body = body or SimControl()
     try:
         streamer.start(body.scenario, body.seed)
@@ -48,20 +48,20 @@ def start(body: SimControl | None = None) -> dict[str, Any]:
 
 
 @app.post("/sim/pause", response_model=SimStatus)
-def pause() -> dict[str, Any]:
+async def pause() -> dict[str, Any]:
     streamer.pause()
     return streamer.status()
 
 
 @app.post("/sim/reset", response_model=SimStatus)
-def reset(body: SimControl | None = None) -> dict[str, Any]:
+async def reset(body: SimControl | None = None) -> dict[str, Any]:
     body = body or SimControl()
     streamer.reset(body.scenario, body.seed)
     return streamer.status()
 
 
 @app.post("/sim/surge", response_model=SimStatus)
-def surge(body: SurgeRequest) -> dict[str, Any]:
+async def surge(body: SurgeRequest) -> dict[str, Any]:
     try:
         streamer.surge(body.model_dump(exclude_none=True))
     except KeyError as exc:

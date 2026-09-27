@@ -127,9 +127,9 @@ export function CellDrawer() {
       <div className="drawer-score">
         <Gauge score={detail.score} color={severityColor[detail.severity]} />
         <div className="sev-block">
-          <div className="muted small">engine</div>
+          <div className="muted small">engine now</div>
           <div className="sev-big" style={{ color: severityColor[detail.severity] }}>{detail.severity}</div>
-          <div className="muted small">after Skeptic</div>
+          <div className="muted small">Skeptic (at last alert)</div>
           <div className="sev-big" style={{ color: final ? severityColor[final] : tokens.muted }}>{final ?? "—"}</div>
         </div>
       </div>

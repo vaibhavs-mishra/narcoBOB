@@ -28,7 +28,7 @@ sources:
     - { id: ps_05, lat: 31.560, lon: 75.020 }   # Jandiala Guru
     - { id: ps_06, lat: 31.280, lon: 74.860 }   # Patti
 injections:
-  - { id: S1, kind: surge,  at_day: 62, lat: 31.55, lon: 74.62, radius_cells: 1, types: [overdose], multiplier: 3.0, ramp_days: 7 }
+  - { id: S1, kind: surge,  at_day: 62, lat: 31.55, lon: 74.62, radius_cells: 1, types: [overdose], multiplier: 4.0, ramp_days: 5 }
   - { id: S2, kind: surge,  at_day: 67, around: S1, ring: 2, types: [overdose], multiplier: 1.6, ramp_days: 5 }
   - { id: D1, kind: surge,  at_day: 64, lat: 31.82, lon: 75.10, radius_cells: 0, types: [overdose], absolute: 5, ramp_days: 2 }
   - { id: D2, kind: outage, at_day: 63, source: "hospital:civil_tarntaran", duration_days: 3 }

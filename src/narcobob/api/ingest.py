@@ -12,7 +12,7 @@ from pydantic import ValidationError
 
 from narcobob.api.state import AppState
 from narcobob.common.db import data_version, kv_get, kv_set
-from narcobob.common.ids import iso, wall_now
+from narcobob.common.ids import iso, parse_ts, wall_now
 from narcobob.common.schemas import Event, IngestResult, Rejection
 
 MAX_PINGS = 200  # events sampled into one `event.batch` WebSocket message
@@ -76,6 +76,7 @@ def ingest(
     state.conn.commit()
 
     duplicates = len(raw_events) - len(rejected) - accepted
+    _count_quality(state, rows, duplicates)
     if accepted:
         state.ingest_log.append((time.monotonic(), accepted))
     pings: list[dict[str, Any]] = []
@@ -84,3 +85,17 @@ def ingest(
         pings = [{"type": r[1], "cell": r[4], "lat": r[2], "lon": r[3], "ts": r[5]} for r in sample]
     return IngestResult(accepted=accepted, duplicates=duplicates, rejected=rejected,
                         data_version=version), pings  # fmt: skip
+
+
+def _count_quality(state: AppState, rows: list[tuple[Any, ...]], duplicates: int) -> None:
+    """Running totals for the Steward: duplicate deliveries, and late events (arriving after
+    their sim-day had already closed)."""
+    sim_now = kv_get(state.conn, "sim_now")
+    late = 0
+    if sim_now is not None and len(rows) <= LIVE_BATCH_MAX:
+        closed = state.bucket_of(parse_ts(sim_now)) - 1
+        late = sum(1 for r in rows if r[6] < closed)
+    for key, n in (("duplicates_total", duplicates), ("late_events_total", late)):
+        if n:
+            kv_set(state.conn, key, str(int(kv_get(state.conn, key) or 0) + n))
+    state.conn.commit()

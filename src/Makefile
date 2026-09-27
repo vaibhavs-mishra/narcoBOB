@@ -1,4 +1,4 @@
-.PHONY: setup dev dev-fallback test lint fmt backtest replay bob-smoke
+.PHONY: setup dev dev-fallback test lint fmt backtest replay bob-smoke bob-run
 
 setup:        ; uv sync && npm --prefix frontend install
 dev:          ; uv run honcho start
@@ -9,3 +9,4 @@ fmt:          ; uv run ruff format . && uv run ruff check --fix .
 backtest:     ; uv run narcobob-backtest --scenario demo_border_surge --seed 42
 replay:       ; uv run honcho start -f Procfile.replay
 bob-smoke:    ; uv run python scripts/bob_smoke.py
+bob-run:      ; uv run python scripts/bob_full_run.py

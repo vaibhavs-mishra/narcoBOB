@@ -25,14 +25,12 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, Query, UploadFile, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 
-from narcobob.api import queries
-from narcobob.api.alerts import AlertEngine, create_run
+from narcobob.api import pipeline, queries
+from narcobob.api.alerts import AlertEngine
 from narcobob.api.ingest import ingest
-from narcobob.api.scoring import cell_score_dicts, persist_scores, score_now
 from narcobob.api.state import AppState
 from narcobob.api.ws import Hub
 from narcobob.common.config import SRC_DIR, get_settings
-from narcobob.common.db import data_version
 from narcobob.common.logging import setup_logging
 from narcobob.common.schemas import IngestResult, SimControl, SurgeRequest
 from narcobob.orchestrator.worker import Worker
@@ -51,37 +49,13 @@ OFFLINE_SIM = {"running": False, "scenario": settings.scenario, "seed": settings
 # ── background loops ─────────────────────────────────────────────────────────
 
 
-async def score_once() -> None:
-    scored = score_now(state)
-    if scored is None:
-        return
-    result, bucket = scored
-    fresh = cell_score_dicts(state, result, bucket)
-    changed = [
-        s for cell, s in fresh.items()
-        if (old := state.scores.get(cell)) is None
-        or abs(int(str(old["score"])) - int(str(s["score"]))) >= 1
-        or old["severity"] != s["severity"]
-    ]  # fmt: skip
-    state.scores = fresh
-    if changed:
-        persist_scores(state, changed)
-        verdicts = queries.latest_verdicts(state)
-        payload = [queries.with_verdict(s, verdicts) for s in changed]
-        await hub.broadcast("scores.update", {"cells": payload, "kpis": queries.kpis(state)})
-    for alert in alert_engine.check(state, fresh):
-        await hub.broadcast("alert.raised", alert)
-
-
 async def scoring_loop() -> None:
     while True:
         try:
-            await score_once()
-            batch = alert_engine.take_batch(state)
-            if batch:
-                run = create_run(state, batch, data_version(state.conn))
-                await hub.broadcast("run.queued", run)
-                worker.enqueue(str(run["run_id"]))
+            await pipeline.score_once(state, hub, alert_engine)
+            run_id = await pipeline.dispatch(state, hub, alert_engine)
+            if run_id is not None:
+                worker.enqueue(run_id)
         except Exception:
             log.exception("scoring loop error")
         await asyncio.sleep(settings.score_interval_s)

@@ -1,0 +1,30 @@
+# Narcotics intelligence brief — {{ area_name }}
+
+*Run {{ run_id }} · data up to {{ sim_now }} (sim time) · feed: SIMULATED · prepared by: {{ source }} agents*
+
+## Executive summary
+{% if confirmed %}{{ confirmed | length }} area(s) show escalating narcotics harm that survived independent challenge: {% for c in confirmed %}{{ c.label }} ({{ c.final_severity }}){% if not loop.last %}, {% endif %}{% endfor %}. {% else %}No alerted area survived independent challenge; all are held at monitoring level. {% endif %}{% if challenged %}{{ challenged | length }} further alert(s) were downgraded or rejected by the Skeptic.{% endif %}
+
+## Escalating areas
+| Area (H3 cell) | Location | Engine score | Engine severity | Final severity | Verdict | Support (7 d) |
+|---|---|---|---|---|---|---|
+{% for c in cells %}| `{{ c.cell }}` | {{ c.location }} | {{ c.score }} | {{ c.severity }} | {{ c.final_severity }} | {{ c.verdict }} | {{ c.support }} ({{ c.confidence }}) |
+{% endfor %}
+## Why these areas
+{% for c in cells %}- **`{{ c.cell }}`** — {{ c.narrative }}
+{% endfor %}
+## What the Skeptic challenged
+{% for c in cells %}- **`{{ c.cell }}`: {{ c.verdict }}** → {{ c.final_severity }}. {{ c.rationale }} (checks: {% for k, v in c.checks.items() %}{{ k }} {{ v }}{% if not loop.last %}, {% endif %}{% endfor %})
+{% endfor %}
+## Recommended actions: Enforcement
+{% for r in enforcement %}- [{{ r.priority }}] {{ r.action }}
+{% endfor %}
+## Recommended actions: Treatment & prevention
+{% for r in treatment %}- [{{ r.priority }}] {{ r.action }}
+{% endfor %}
+## Data caveats
+- The event feed is **simulated** and calibrated to public aggregates; it is not real case data.
+{% for note in caveats %}- {{ note }}
+{% endfor %}
+## Method note
+Scores come from a deterministic engine: acceleration of overdose admissions, harm-versus-enforcement divergence, spillover from neighbouring cells and a Getis-Ord Gi* hotspot statistic, each measured against the cell's own Poisson noise, weighted {{ weights }} and mapped to 0–100. The Skeptic re-checks support, weight sensitivity (stability < 0.6 fails), data gaps, enforcement artefacts and single-source dependence. Every number in this brief comes from a logged tool call. This system predicts places, not people.

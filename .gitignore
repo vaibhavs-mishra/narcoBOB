@@ -94,3 +94,11 @@ logs/
 .terraform/
 *.tfstate
 *.tfstate.backup
+
+# ── NarcoBob ──────────────────────────────────────────────────────────────────
+src/var/
+src/.env
+src/frontend/node_modules/
+src/frontend/dist/
+src/recordings/*.jsonl
+!src/recordings/demo_golden.jsonl

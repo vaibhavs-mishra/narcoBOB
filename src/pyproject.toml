@@ -1,0 +1,66 @@
+[project]
+name = "narcobob"
+version = "0.1.0"
+description = "Real-time, area-agnostic narcotics hotspot intelligence with IBM Bob agents"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.141.1",
+    "h3>=4",
+    "httpx>=0.28.1",
+    "jinja2>=3.1.6",
+    "mcp[cli]>=1.20,<2",
+    "numpy>=2.5.3",
+    "pandas>=3.0.6",
+    "pydantic>=2.13.5",
+    "pydantic-settings>=2.15.0",
+    "python-multipart>=0.0.32",
+    "python-ulid>=4.0.1",
+    "pyyaml>=6.0.3",
+    "tenacity>=9.1.4",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[project.scripts]
+narcobob-api = "narcobob.api.main:run"
+narcobob-mcp = "narcobob.harness.server:run"
+narcobob-sim = "narcobob.simulator.main:run"
+narcobob-harness = "narcobob.harness.cli:main"
+narcobob-backtest = "narcobob.backtest.run:main"
+narcobob-replay = "narcobob.replay.server:run"
+
+[build-system]
+requires = ["uv_build>=0.12.17,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = ""
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["frontend"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["h3", "h3.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[dependency-groups]
+dev = [
+    "honcho>=2.0.0",
+    "mypy>=2.3.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.16.9",
+]

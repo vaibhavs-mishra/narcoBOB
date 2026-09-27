@@ -1,0 +1,2 @@
+replay: uv run narcobob-replay
+web: npm --prefix frontend run dev

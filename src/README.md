@@ -1,47 +1,34 @@
-# Source Code
+# NarcoBob — source code
 
-Place all your project's source code in this folder.
+Everything runs from this directory. See `../docs/setup-guide.md` for the full run guide.
 
-## Structure Guidelines
-
-Organize your code logically. Here are common patterns — use whatever fits
-your project:
-
-### Web Application
-```
-src/
-  backend/        ← API server code
-  frontend/       ← UI code
-  shared/         ← Shared utilities/types
+```bash
+make setup         # uv sync (Python 3.12) + npm install (frontend)
+make dev-fallback  # api + mcp + simulator + web, with rule-based agents (no Bob needed)
+make dev           # same, with IBM Bob Shell running the four agents
+make test          # pytest
+make lint          # ruff + mypy --strict (engine, harness) + oxlint + tsc
+make backtest      # offline detection metrics for the demo scenario
+make replay        # replays a recorded real run over the same WebSocket
 ```
 
-### Data / AI Project
-```
-src/
-  data/           ← Data ingestion / preprocessing
-  models/         ← ML model code
-  api/            ← Serving layer
-  notebooks/      ← Jupyter notebooks (exploration)
-```
+## Layout
 
-### CLI / Script-based Tool
-```
-src/
-  cli/            ← CLI entry points
-  lib/            ← Core logic
-  utils/          ← Helpers
-```
+| Path | What lives there |
+|---|---|
+| `narcobob/common/` | Config (env vars), Pydantic schemas for every interface, SQLite schema |
+| `narcobob/engine/` | The deterministic scoring engine: pure functions, no I/O |
+| `narcobob/api/` | FastAPI app: ingest, scoring loop, alerts, WebSocket hub, recorder |
+| `narcobob/orchestrator/` | Agent run queue, Bob Shell runner, deterministic fallback agents |
+| `narcobob/harness/` | The MCP tool server agents act through (auth, budgets, tracing) |
+| `narcobob/simulator/` | Synthetic event stream (clearly labelled simulated) + control API |
+| `narcobob/backtest/` | Offline scenario runs and detection metrics |
+| `narcobob/replay/` | Serves a recorded run for demos |
+| `agents/` | IBM Bob Shell workspace: custom modes, per-mode rules, MCP config |
+| `scenarios/` | Scenario YAML files for the simulator and backtest |
+| `recordings/` | WebSocket recordings and backtest results |
+| `frontend/` | React + Blueprint.js + deck.gl command-centre UI |
+| `tests/` | Unit, contract and end-to-end tests |
+| `var/` | Runtime SQLite database (gitignored) |
 
-## Important Files to Include
-
-- `requirements.txt` or `package.json` — dependency manifest
-- `.env.example` — template for environment variables (NEVER commit `.env`)
-- Any database migration files
-- Configuration files
-
-## What NOT to Include in src/
-
-- `.env` files with real secrets
-- Large binary files (use Git LFS or link externally)
-- `node_modules/` or `venv/` (these are in `.gitignore`)
-- Build artifacts (`dist/`, `build/`, `__pycache__/`)
+Configuration: copy `.env.example` to `.env`. Every variable has a working default.

@@ -1,0 +1,4 @@
+api: uv run narcobob-api
+mcp: uv run narcobob-mcp
+sim: uv run narcobob-sim
+web: npm --prefix frontend run dev

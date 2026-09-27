@@ -75,3 +75,21 @@ def test_alerts_coalesce_into_one_run(state: AppState) -> None:
     assert run["cells"] == ["a", "b"] and run["status"] == "QUEUED"
     linked = state.conn.execute("SELECT COUNT(*) FROM alerts WHERE run_id = ?", (run["run_id"],))
     assert linked.fetchone()[0] == 2
+
+
+async def test_worker_runs_most_severe_first(state: AppState) -> None:
+    from narcobob.api.alerts import create_run
+    from narcobob.api.ws import Hub
+    from narcobob.orchestrator.worker import Worker
+
+    engine = AlertEngine()
+    engine.check(state, scores(a="NORMAL", b="NORMAL"))
+    engine.check(state, scores(a="HIGH", b="NORMAL"))
+    high_run = create_run(state, engine.take_batch(state) or [], 1)["run_id"]
+    engine.check(state, scores(a="HIGH", b="CRITICAL"))
+    crit_run = create_run(state, engine.take_batch(state) or [], 1)["run_id"]
+    worker = Worker(state, Hub(None))
+    worker.enqueue(str(high_run))
+    worker.enqueue(str(crit_run))
+    assert worker._next_run() == crit_run
+    assert worker._next_run() == high_run

@@ -20,6 +20,7 @@ def run(conn: sqlite3.Connection, ctx: CallContext, args: dict[str, Any]) -> dic
     if row is None:
         raise ToolFailure("NOT_FOUND", f"run {ctx.run_id!r} not found")
     alert_ids: list[str] = json.loads(row["alert_ids"])
+    cells: list[str] = json.loads(row["cells"])
     marks = ",".join("?" * len(alert_ids))
     alerts = [
         dict(a)
@@ -29,8 +30,8 @@ def run(conn: sqlite3.Connection, ctx: CallContext, args: dict[str, Any]) -> dic
     ]
     return {
         "run_id": ctx.run_id,
-        "cells": json.loads(row["cells"]),
-        "alerts": alerts,
+        "cells": cells,
+        "alerts": [a for a in alerts if a["cell"] in cells],
         "config": public_config(get_settings()),
         "sim_now": kv_get(conn, "sim_now"),
         "data_version": int(row["data_version"]),

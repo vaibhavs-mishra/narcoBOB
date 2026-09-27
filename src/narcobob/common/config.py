@@ -63,6 +63,7 @@ class Settings(BaseSettings):
     sim_autostart: bool = Field(True, alias="NARCOBOB_SIM_AUTOSTART")
     record: bool = Field(True, alias="NARCOBOB_RECORD")
     replay_file: Path = Field(Path("recordings/demo_golden.jsonl"), alias="NARCOBOB_REPLAY_FILE")
+    replay_speed: float = Field(1.0, alias="NARCOBOB_REPLAY_SPEED", gt=0)
 
     @field_validator("area_bbox", "weights", "thresholds", mode="before")
     @classmethod

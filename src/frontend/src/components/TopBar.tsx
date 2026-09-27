@@ -61,7 +61,7 @@ export function TopBar() {
         <Kpi label="events / min" value={kpis ? Math.round(kpis.events_per_min).toLocaleString() : "—"} />
         <Kpi label="active alerts" value={kpis ? String(kpis.active_alerts) : "—"} />
         <Kpi label="cells elevated" value={kpis ? `${kpis.cells_elevated} / ${kpis.cells_monitored}` : "—"} />
-        <Kpi label="sim clock (UTC)" value={simClock(sim?.sim_now ?? kpis?.sim_now)} />
+        <Kpi label="sim clock (UTC)" value={simClock(kpis?.sim_now ?? sim?.sim_now)} />
       </div>
       <div className="status">
         <Light label="API" state={connected ? "ok" : "bad"} />

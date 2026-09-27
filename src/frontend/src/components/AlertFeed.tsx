@@ -17,6 +17,8 @@ function AlertRow({ a, now }: { a: Alert; now: number }) {
   const flashedAt = useStore((s) => s.flashAlertIds[a.alert_id]);
   const flash = flashedAt !== undefined && now - flashedAt < 2500;
   const final = a.final_severity ?? null;
+  const runStatus = useStore((s) => (a.run_id ? s.runs[a.run_id]?.summary.status : undefined));
+  const reviewed = runStatus === "DONE" || runStatus === "FAILED_WITH_FALLBACK";
   return (
     <button className={`alert-row${selected ? " selected" : ""}${flash ? " flash" : ""}`} onClick={() => select(a.cell)}>
       <span className="sev-bar" style={{ background: severityColor[final ?? a.severity] }} />
@@ -39,6 +41,8 @@ function AlertRow({ a, now }: { a: Alert; now: number }) {
             <Tag minimal intent={verdictIntent[a.verdict]} className="verdict-tag">
               {a.verdict.replace("_", " ")}
             </Tag>
+          ) : a.run_id && reviewed ? (
+            <Tag minimal className="verdict-tag" title="The run reviewed only its most severe cells">not reviewed</Tag>
           ) : a.run_id ? (
             <Tag minimal className="verdict-tag pending">agents reviewing</Tag>
           ) : (

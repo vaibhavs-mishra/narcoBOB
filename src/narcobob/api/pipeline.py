@@ -12,6 +12,8 @@ from narcobob.api.state import AppState
 from narcobob.api.ws import Hub
 from narcobob.common.db import data_version
 
+VISIBLE_SCORE = 30  # the map draws cells from this score up
+
 
 async def score_once(state: AppState, hub: Hub, engine: AlertEngine) -> None:
     scored = score_now(state)
@@ -26,11 +28,20 @@ async def score_once(state: AppState, hub: Hub, engine: AlertEngine) -> None:
         or abs(int(str(old["score"])) - int(str(s["score"]))) >= 1
         or old["severity"] != s["severity"]
     ]
+    # Persist every change, but only broadcast cells the map can show (or just left it):
+    # this keeps WebSocket traffic and recordings small.
+    visible = [
+        s
+        for s in changed
+        if int(str(s["score"])) >= VISIBLE_SCORE
+        or int(str((state.scores.get(str(s["cell"])) or {"score": 0})["score"])) >= VISIBLE_SCORE
+    ]
     state.scores = fresh
     if changed:
         persist_scores(state, changed)
+    if visible:
         verdicts = queries.latest_verdicts(state)
-        payload = [queries.with_verdict(s, verdicts) for s in changed]
+        payload = [queries.with_verdict(s, verdicts) for s in visible]
         await hub.broadcast("scores.update", {"cells": payload, "kpis": queries.kpis(state)})
     for alert in engine.check(state, fresh):
         await hub.broadcast("alert.raised", alert)

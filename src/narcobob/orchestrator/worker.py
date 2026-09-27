@@ -29,6 +29,7 @@ log = logging.getLogger(__name__)
 
 AGENT_ORDER = ("steward", "analyst", "skeptic", "writer")
 MAX_WAITING = 3
+MAX_CELLS = 6  # cells reviewed per run
 POLL_S = 0.5
 
 
@@ -53,6 +54,19 @@ class Worker:
             self._merge(self.waiting.pop(0), into=run_id)
         self.waiting.append(run_id)
         self._wake.set()
+
+    def _next_run(self) -> str:
+        """The waiting run with the most severe alert goes first (ties: oldest first), so a
+        CRITICAL surge is never stuck behind reviews of borderline HIGH alerts."""
+        rank = {"HIGH": 1, "CRITICAL": 2}
+
+        def severity(run_id: str) -> int:
+            rows = self.conn.execute("SELECT severity FROM alerts WHERE run_id = ?", (run_id,))
+            return max((rank.get(r["severity"], 0) for r in rows), default=0)
+
+        best = max(self.waiting, key=lambda r: (severity(r), -self.waiting.index(r)))
+        self.waiting.remove(best)
+        return best
 
     def _merge(self, old: str, into: str) -> None:
         rows = {
@@ -80,7 +94,7 @@ class Worker:
                 self._wake.clear()
                 await self._wake.wait()
                 continue
-            run_id = self.waiting.pop(0)
+            run_id = self._next_run()
             try:
                 await self.execute_run(run_id)
             except Exception:
@@ -95,10 +109,11 @@ class Worker:
         ).fetchone()
         if row is None:
             return "MISSING"
-        cells: list[str] = json.loads(row["cells"])
+        cells = self._review_cells(run_id, json.loads(row["cells"]))
         self.conn.execute(
-            "UPDATE agent_runs SET status = 'RUNNING', wall_started_at = ? WHERE run_id = ?",
-            (wall_now(), run_id),
+            "UPDATE agent_runs SET status = 'RUNNING', cells = ?, wall_started_at = ?"
+            " WHERE run_id = ?",
+            (json.dumps(cells), wall_now(), run_id),
         )
         self.conn.commit()
         await self._broadcast_run("run.started", run_id)
@@ -163,6 +178,19 @@ class Worker:
         attempt = 2 if self.state.settings.agents_mode == "bob" else 1
         status = "fallback" if self._has_output(step_id, agent_id) else "failed"
         return await self._end_step(run_id, step_id, agent_id, status, "fallback", logs, attempt)
+
+    def _review_cells(self, run_id: str, cells: list[str]) -> list[str]:
+        """At most MAX_CELLS cells per run: the most severe alerts, then the highest scores.
+        Agent time grows with cells; alerts left out stay visibly 'not reviewed'."""
+        rank = {"HIGH": 1, "CRITICAL": 2}
+        best: dict[str, tuple[int, int]] = {}
+        for a in self.conn.execute(
+            "SELECT cell, severity, score FROM alerts WHERE run_id = ?", (run_id,)
+        ):
+            key = (rank.get(a["severity"], 0), int(a["score"]))
+            best[a["cell"]] = max(best.get(a["cell"], key), key)
+        ordered = sorted(cells, key=lambda c: best.get(c, (0, 0)), reverse=True)
+        return sorted(ordered[:MAX_CELLS])
 
     def _has_output(self, step_id: str, agent_id: str) -> bool:
         if agent_id == "writer":

@@ -68,6 +68,17 @@ def _baseline_first_day(
     return None
 
 
+def _baseline_precision(rep: Replay, type_idx: list[int], truth: set[int], onset: int) -> float:
+    """Precision@5 of a naive ranking by raw recent counts, over the same days as ours."""
+    counts, values = rep.world.counts, []
+    for rec in rep.days:
+        if rec.day < onset + WINDOW // 2:
+            continue
+        raw = counts[:, type_idx, max(0, rec.day + 1 - WINDOW) : rec.day + 1].sum(axis=(1, 2))
+        values.append(len(set(np.argsort(-raw, kind="stable")[:5].tolist()) & truth) / 5)
+    return round(float(np.mean(values)), 3) if values else 0.0
+
+
 def _baseline_hits(rep: Replay, type_idx: list[int], cells: set[int], start: int) -> bool:
     counts = rep.world.counts
     for day in range(start, counts.shape[2]):
@@ -96,6 +107,8 @@ def scenario_metrics(rep: Replay) -> dict[str, Any]:
         out["baselines"] = {
             "raw_overdose_rank_days_to_top5": _baseline_first_day(rep, [0], set(s1.cells), onset),
             "raw_seizure_rank_days_to_top5": _baseline_first_day(rep, [1], set(s1.cells), onset),
+            "raw_overdose_rank_precision_at_5": _baseline_precision(rep, [0], truth, onset),
+            "raw_seizure_rank_precision_at_5": _baseline_precision(rep, [1], truth, onset),
         }
     decoys: dict[str, Any] = {}
     for decoy_id, cells in _decoy_cells(rep).items():
@@ -113,6 +126,17 @@ def scenario_metrics(rep: Replay) -> dict[str, Any]:
     return out
 
 
+def _top5_entries(rep: Replay, type_idx: list[int]) -> int:
+    """How often a cell *enters* a naive raw-count top 5: the baseline's version of an alert."""
+    counts, previous, entries = rep.world.counts, set[int](), 0
+    for rec in rep.days:
+        raw = counts[:, type_idx, max(0, rec.day + 1 - WINDOW) : rec.day + 1].sum(axis=(1, 2))
+        top = set(np.argsort(-raw, kind="stable")[:5].tolist())
+        entries += len(top - previous) if previous else 0
+        previous = top
+    return entries
+
+
 def false_alarm_metrics(rep: Replay) -> dict[str, Any]:
     days = len(rep.days)
     months = max(days / 30, 1e-9)
@@ -124,4 +148,6 @@ def false_alarm_metrics(rep: Replay) -> dict[str, Any]:
         "alerts_per_month_pre_skeptic": round(pre / months, 2),
         "alerts_per_month_post_skeptic": round(post / months, 2),
         "critical_alerts": critical,
+        "raw_overdose_top5_entries_per_month": round(_top5_entries(rep, [0]) / months, 2),
+        "raw_seizure_top5_entries_per_month": round(_top5_entries(rep, [1]) / months, 2),
     }

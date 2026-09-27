@@ -1,6 +1,7 @@
 """`get_support`: how much evidence stands behind each cell's score (last 7 sim-days).
 
-Counts cover the cell plus its ring-1 neighbours, the same footprint the score uses.
+Counts cover the cell plus its ring-1 neighbours, the same footprint the score uses, over
+the 7 sim-days up to the cell's alert in this run.
 """
 
 from __future__ import annotations
@@ -11,11 +12,11 @@ from typing import Any
 from narcobob.common.config import get_settings
 from narcobob.harness.data import (
     RECENT,
+    as_of_bucket,
     check_cells,
     counts_by,
     footprint,
-    last_complete_bucket,
-    score_rows,
+    scores_for,
 )
 from narcobob.harness.envelope import CallContext
 
@@ -25,10 +26,11 @@ VERSION = "1.0"
 
 def run(conn: sqlite3.Connection, ctx: CallContext, args: dict[str, Any]) -> dict[str, Any]:
     cells = check_cells(list(args.get("cells") or []))
-    last = last_complete_bucket(conn, get_settings())
-    scores = score_rows(conn, cells)
+    settings = get_settings()
+    scores = scores_for(conn, settings, ctx.run_id, cells)
     out = []
     for cell in cells:
+        last = as_of_bucket(conn, settings, ctx.run_id, cell)
         area = footprint(cell)
         by_source = counts_by(conn, area, last - RECENT + 1, last, "source")
         total = sum(by_source.values())

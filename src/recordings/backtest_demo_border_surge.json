@@ -13,7 +13,7 @@
     82,
     90
   ],
-  "generated_at": "2026-09-27T19:33:43+00:00",
+  "generated_at": "2026-09-27T19:56:27+00:00",
   "data": "SIMULATED",
   "detection": {
     "onset_day": 62,
@@ -28,7 +28,9 @@
   },
   "baselines": {
     "raw_overdose_rank_days_to_top5": 1,
-    "raw_seizure_rank_days_to_top5": null
+    "raw_seizure_rank_days_to_top5": null,
+    "raw_overdose_rank_precision_at_5": 0.96,
+    "raw_seizure_rank_precision_at_5": 0.0
   },
   "decoys": {
     "D1": {
@@ -62,6 +64,8 @@
     "sim_days": 55,
     "alerts_per_month_pre_skeptic": 6.55,
     "alerts_per_month_post_skeptic": 3.82,
-    "critical_alerts": 1
+    "critical_alerts": 1,
+    "raw_overdose_top5_entries_per_month": 53.45,
+    "raw_seizure_top5_entries_per_month": 51.27
   }
 }

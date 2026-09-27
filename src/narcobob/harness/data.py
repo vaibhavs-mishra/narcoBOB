@@ -85,3 +85,110 @@ def counts_by(
         [*cells, first, last],
     ).fetchall()
     return {r["k"]: int(r["n"]) for r in rows}
+
+
+# ── evidence "as of the alert" ───────────────────────────────────────────────
+# The world keeps moving while agents think (one sim-day every few seconds, reviews take
+# minutes). So agents review each cell as it was when it alerted: the engine is
+# deterministic and every event is stored, so the scores at any past bucket can be
+# recomputed exactly. Verdicts are then reproducible and never judge a moved-on world.
+
+HISTORY = 60
+_SCORE_CACHE: dict[tuple[str, int, int], dict[str, dict[str, Any]]] = {}
+
+
+def bucket_of_ts(conn: sqlite3.Connection, settings: Settings, ts: str) -> int:
+    epoch0 = parse_ts(kv_get(conn, "epoch0") or "2026-01-01T00:00:00Z")
+    return int((parse_ts(ts) - epoch0).total_seconds() // settings.bucket_sim_seconds)
+
+
+def run_as_of(conn: sqlite3.Connection, settings: Settings, run_id: str) -> dict[str, int]:
+    """Per alerted cell: the last complete bucket when its most severe alert fired."""
+    rank = {"HIGH": 1, "CRITICAL": 2}
+    best: dict[str, tuple[int, int]] = {}
+    for a in conn.execute("SELECT cell, severity, sim_ts FROM alerts WHERE run_id = ?", (run_id,)):
+        # an alert's sim_ts is the end of the day that was scored: bucket = that day
+        key = (rank.get(a["severity"], 0), bucket_of_ts(conn, settings, a["sim_ts"]) - 1)
+        best[a["cell"]] = max(best.get(a["cell"], key), key)
+    return {cell: bucket for cell, (_, bucket) in best.items()}
+
+
+def as_of_bucket(
+    conn: sqlite3.Connection, settings: Settings, run_id: str, cell: str | None = None
+) -> int:
+    """The bucket to evaluate `cell` at in this run (latest alert bucket for other cells;
+    the last complete bucket if the run has no alerts)."""
+    buckets = run_as_of(conn, settings, run_id)
+    if cell is not None and cell in buckets:
+        return buckets[cell]
+    if buckets:
+        return max(buckets.values())
+    return last_complete_bucket(conn, settings)
+
+
+def scores_at(
+    conn: sqlite3.Connection, settings: Settings, bucket: int
+) -> dict[str, dict[str, Any]]:
+    """Every cell's score as it was at `bucket`, recomputed by the engine (cached)."""
+    from narcobob.common.db import data_version
+    from narcobob.engine.cells import CellGrid
+    from narcobob.engine.composite import score_cells
+    from narcobob.engine.windows import TYPES
+
+    key = (str(settings.db_file), bucket, data_version(conn))
+    if key in _SCORE_CACHE:
+        return _SCORE_CACHE[key]
+    first_event = conn.execute("SELECT MIN(bucket) FROM events").fetchone()[0]
+    if first_event is None:
+        raise ToolFailure("NOT_FOUND", "no data ingested yet")
+    n_buckets = min(HISTORY, bucket - int(first_event) + 1)
+    if n_buckets < 14:
+        raise ToolFailure("NOT_FOUND", "not enough history to score yet")
+    first = bucket - n_buckets + 1
+    grid = CellGrid.from_bbox(settings.area_bbox, settings.h3_res)
+    import numpy as np
+
+    counts = np.zeros((grid.n, len(TYPES), n_buckets))
+    for r in conn.execute(
+        "SELECT cell, type, bucket, COUNT(*) AS n FROM events WHERE bucket BETWEEN ? AND ?"
+        " GROUP BY cell, type, bucket",
+        (first, bucket),
+    ):
+        i = grid.index.get(r["cell"])
+        if i is not None:
+            counts[i, TYPES.index(r["type"]), r["bucket"] - first] = r["n"]
+    result = score_cells(counts, grid, settings.weights, settings.thresholds)
+    end = bucket_start(conn, settings, bucket + 1).strftime("%Y-%m-%dT%H:%M:%SZ")
+    out: dict[str, dict[str, Any]] = {}
+    for i, cell in enumerate(grid.cells):
+        out[cell] = {
+            "cell": cell,
+            "score": int(result.score[i]),
+            "severity": result.severity[i],
+            "confidence": result.confidence[i],
+            "support": int(result.support[i]),
+            "components": {
+                d: {
+                    "z": round(float(result.z[d][i]), 3),
+                    "contrib": round(float(result.contrib[d][i]), 3),
+                }
+                for d in DRIVERS
+            },
+            "sim_ts": end,
+        }
+    if len(_SCORE_CACHE) > 16:
+        _SCORE_CACHE.clear()
+    _SCORE_CACHE[key] = out
+    return out
+
+
+def scores_for(
+    conn: sqlite3.Connection, settings: Settings, run_id: str, cells: list[str]
+) -> dict[str, dict[str, Any]]:
+    """Each requested cell's score as of its own alert in this run."""
+    out: dict[str, dict[str, Any]] = {}
+    for cell in cells:
+        at = scores_at(conn, settings, as_of_bucket(conn, settings, run_id, cell))
+        if cell in at:
+            out[cell] = at[cell]
+    return out

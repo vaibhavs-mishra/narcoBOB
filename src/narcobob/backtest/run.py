@@ -54,6 +54,9 @@ def print_table(r: dict[str, Any]) -> None:
             "  naive baselines, days until an S1 cell is top-5:"
             f" raw overdoses {b['raw_overdose_rank_days_to_top5']},"
             f" raw seizures {b['raw_seizure_rank_days_to_top5']}",
+            "  naive baselines, precision@5 after onset:"
+            f" raw overdoses {b['raw_overdose_rank_precision_at_5']},"
+            f" raw seizures {b['raw_seizure_rank_precision_at_5']}",
         ]
     for decoy_id, v in r.get("decoys", {}).items():
         lines.append(
@@ -66,6 +69,11 @@ def print_table(r: dict[str, Any]) -> None:
         lines.append(
             f"  calm: {c['alerts_per_month_pre_skeptic']} → {c['alerts_per_month_post_skeptic']}"
             f" HIGH+ alerts/month after Skeptic; CRITICAL alerts: {c['critical_alerts']}"
+        )
+        lines.append(
+            "  calm, naive rankings (new top-5 entries/month): raw overdoses"
+            f" {c['raw_overdose_top5_entries_per_month']},"
+            f" raw seizures {c['raw_seizure_top5_entries_per_month']}"
         )
     print("\n".join(lines))
 

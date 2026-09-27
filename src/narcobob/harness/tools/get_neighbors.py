@@ -1,4 +1,4 @@
-"""`get_neighbors`: scores of the cells around a cell (rings 1..k), for clustering and spillover."""
+"""`get_neighbors`: scores of the cells around a cell (rings 1..k), as of the cell's alert."""
 
 from __future__ import annotations
 
@@ -7,7 +7,8 @@ from typing import Any
 
 import h3
 
-from narcobob.harness.data import check_cells, score_rows
+from narcobob.common.config import get_settings
+from narcobob.harness.data import as_of_bucket, check_cells, scores_at
 from narcobob.harness.envelope import CallContext
 from narcobob.harness.errors import ToolFailure
 
@@ -21,7 +22,8 @@ def run(conn: sqlite3.Connection, ctx: CallContext, args: dict[str, Any]) -> dic
     if not 1 <= k <= 2:
         raise ToolFailure("VALIDATION_ERROR", "k must be 1 or 2")
     around = sorted(set(h3.grid_disk(cell, k)) - {cell})
-    rows = score_rows(conn, around)
+    settings = get_settings()
+    rows = scores_at(conn, settings, as_of_bucket(conn, settings, ctx.run_id, cell))
     return {
         "cell": cell,
         "neighbors": [

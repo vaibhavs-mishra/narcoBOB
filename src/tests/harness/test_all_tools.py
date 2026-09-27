@@ -38,8 +38,18 @@ from narcobob.simulator.generator import Generator
 from narcobob.simulator.scenario import load_scenario
 
 CELL = h3.latlng_to_cell(31.55, 74.62, 7)
-TOOLS = [get_run_context, get_data_quality, get_cell_scores, get_cell_timeseries, get_neighbors,
-         get_support, run_sensitivity, get_findings, submit_findings, submit_report]  # fmt: skip
+TOOLS = [
+    get_run_context,
+    get_data_quality,
+    get_cell_scores,
+    get_cell_timeseries,
+    get_neighbors,
+    get_support,
+    run_sensitivity,
+    get_findings,
+    submit_findings,
+    submit_report,
+]
 
 
 @pytest.fixture(scope="module")
@@ -113,7 +123,7 @@ HAPPY: dict[str, dict[str, Any]] = {
                 },
             }
         ],
-    },  # fmt: skip
+    },
     "submit_report": {
         "idempotency_key": "k1",
         "report": {
@@ -123,7 +133,7 @@ HAPPY: dict[str, dict[str, Any]] = {
                 {"track": "treatment", "cells": [CELL], "action": "b", "priority": "monitor"},
             ],
         },
-    },  # fmt: skip
+    },
 }
 BAD: dict[str, dict[str, Any]] = {
     "get_data_quality": {"cells": ["not-a-cell"]},
@@ -142,7 +152,7 @@ BAD: dict[str, dict[str, Any]] = {
                 {"track": "enforcement", "cells": [], "action": "a", "priority": "monitor"}
             ],
         },
-    },  # fmt: skip
+    },
 }
 
 
@@ -182,3 +192,32 @@ def test_sensitivity_and_support_shapes(conn: sqlite3.Connection) -> None:
     sup = call(conn, get_support, "skeptic", cells=[CELL])["data"]["cells"][0]
     assert sum(sup["by_source"].values()) == sum(sup["by_type"].values())
     assert 0.0 <= sup["top_source_share"] <= 1.0
+
+
+def test_evidence_is_as_of_the_alert(conn: sqlite3.Connection) -> None:
+    """Agents review a cell as it was when it alerted, even after the world moved on."""
+    old_end = "2026-07-26T00:00:00Z"  # end of sim day 24; the data runs to day 39
+    conn.execute(
+        "INSERT INTO agent_runs(run_id, status, alert_ids, cells, data_version)"
+        " VALUES ('r_old', 'RUNNING', '[\"a_old\"]', ?, 1)",
+        (json.dumps([CELL]),),
+    )
+    conn.execute(
+        "INSERT INTO alerts(alert_id, cell, severity, score, reason, run_id, sim_ts,"
+        " wall_created_at) VALUES ('a_old', ?, 'HIGH', 90, 'entered HIGH', 'r_old', ?, 'w')",
+        (CELL, old_end),
+    )
+    step = new_id()
+    conn.execute(
+        "INSERT INTO agent_steps(step_id, run_id, agent_id, status, wall_started_at)"
+        " VALUES (?, 'r_old', 'analyst', 'running', 'w')",
+        (step,),
+    )
+    conn.commit()
+    ctx = CallContext(run_id="r_old", agent_id="analyst", step_id=step, source="fallback")
+    then = execute(conn, ctx, get_cell_scores.NAME, "1.0", get_cell_scores.run, {"cells": [CELL]})
+    now = call(conn, get_cell_scores, "analyst", cells=[CELL])
+    assert then["data"]["cells"][0]["sim_ts"] == old_end
+    assert now["data"]["cells"][0]["sim_ts"] > old_end
+    ctx_run = execute(conn, ctx, get_run_context.NAME, "1.0", get_run_context.run, {})
+    assert ctx_run["data"]["as_of"] == {CELL: old_end}

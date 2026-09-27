@@ -17,7 +17,7 @@ import numpy as np
 from narcobob.common.config import get_settings
 from narcobob.common.db import kv_get
 from narcobob.engine.quality import source_gaps
-from narcobob.harness.data import RECENT, check_cells, counts_by, footprint, last_complete_bucket
+from narcobob.harness.data import RECENT, as_of_bucket, check_cells, counts_by, footprint
 from narcobob.harness.envelope import CallContext
 from narcobob.harness.errors import ToolFailure
 
@@ -31,7 +31,8 @@ def run(conn: sqlite3.Connection, ctx: CallContext, args: dict[str, Any]) -> dic
     window = int(args.get("window_buckets", 14))
     if not 7 <= window <= 60:
         raise ToolFailure("VALIDATION_ERROR", "window_buckets must be between 7 and 60")
-    last = last_complete_bucket(conn, get_settings())
+    settings = get_settings()
+    last = max(as_of_bucket(conn, settings, ctx.run_id, c) for c in cells)
     history_first = last - 28 - window + 1  # enough history to know a source's normal rate
     rows = conn.execute(
         "SELECT source, bucket, COUNT(*) AS n FROM events WHERE bucket BETWEEN ? AND ?"

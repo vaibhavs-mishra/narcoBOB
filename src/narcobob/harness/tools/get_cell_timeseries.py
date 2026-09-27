@@ -1,4 +1,4 @@
-"""`get_cell_timeseries`: daily event counts for one cell, up to the last complete sim-day."""
+"""`get_cell_timeseries`: daily event counts for one cell, up to its alert in this run."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import sqlite3
 from typing import Any
 
 from narcobob.common.config import get_settings
-from narcobob.harness.data import check_cells, last_complete_bucket
+from narcobob.harness.data import as_of_bucket, check_cells
 from narcobob.harness.envelope import CallContext
 from narcobob.harness.errors import ToolFailure
 
@@ -23,7 +23,7 @@ def run(conn: sqlite3.Connection, ctx: CallContext, args: dict[str, Any]) -> dic
     buckets = int(args.get("buckets", 28))
     if not 1 <= buckets <= 60:
         raise ToolFailure("VALIDATION_ERROR", "buckets must be between 1 and 60")
-    last = last_complete_bucket(conn, get_settings())
+    last = as_of_bucket(conn, get_settings(), ctx.run_id, cell)
     first = last - buckets + 1
     series = {t: [0] * buckets for t in types}
     for r in conn.execute(

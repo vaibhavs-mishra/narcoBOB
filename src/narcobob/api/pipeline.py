@@ -54,4 +54,7 @@ async def dispatch(state: AppState, hub: Hub, engine: AlertEngine) -> str | None
         return None
     run = create_run(state, batch, data_version(state.conn))
     await hub.broadcast("run.queued", run)
+    marks = ",".join("?" * len(batch))
+    for alert in state.conn.execute(f"SELECT * FROM alerts WHERE alert_id IN ({marks})", batch):
+        await hub.broadcast("alert.updated", dict(alert))  # now linked to its run
     return str(run["run_id"])

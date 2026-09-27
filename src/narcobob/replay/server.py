@@ -10,10 +10,13 @@ drawer, briefs) are answered from the SQLite snapshot saved next to the recordin
 from __future__ import annotations
 
 import asyncio
+import gzip
 import json
 import logging
+import shutil
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -24,13 +27,42 @@ from fastapi.middleware.cors import CORSMiddleware
 from narcobob.api import queries
 from narcobob.api.state import AppState
 from narcobob.common.config import get_settings, public_config
-from narcobob.common.ids import wall_now
+from narcobob.common.ids import iso, parse_ts, wall_now
 from narcobob.common.logging import setup_logging
 
 log = logging.getLogger(__name__)
 settings = get_settings()
 RECORDING = settings.resolve(settings.replay_file)
-SNAPSHOT_DB = RECORDING.with_suffix(".db")
+# demo_golden.jsonl.gz → demo_golden.db.gz (either may be gzipped or plain)
+_STEM = RECORDING.name.removesuffix(".gz").removesuffix(".jsonl")
+SNAPSHOT_DB = next(
+    (
+        p
+        for p in (RECORDING.parent / f"{_STEM}.db.gz", RECORDING.parent / f"{_STEM}.db")
+        if p.exists()
+    ),
+    RECORDING.parent / f"{_STEM}.db.gz",
+)
+
+
+def _open_text(path: Path) -> str:
+    if path.suffix == ".gz":
+        with gzip.open(path, "rt", encoding="utf-8") as fh:
+            return fh.read()
+    return path.read_text(encoding="utf-8")
+
+
+def _local_db(path: Path) -> Path:
+    """The snapshot as a plain SQLite file (decompressed into var/ if gzipped)."""
+    if path.suffix != ".gz":
+        return path
+    out = settings.resolve(Path("var")) / f"replay_{_STEM}.db"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with gzip.open(path, "rb") as src, out.open("wb") as dst:
+        shutil.copyfileobj(src, dst)
+    return out
+
+
 LOOP_PAUSE_S = 10.0
 MAX_GAP_S = 20.0  # long idle stretches in the recording are shortened to this
 
@@ -39,7 +71,7 @@ class Player:
     """Plays the recording to all clients and keeps a folded snapshot of what was played."""
 
     def __init__(self, path: Path, speed: float) -> None:
-        self.frames = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+        self.frames = [json.loads(line) for line in _open_text(path).splitlines() if line.strip()]
         self.speed = speed
         self.clients: set[WebSocket] = set()
         self.seq = 0
@@ -101,9 +133,50 @@ class Player:
             except Exception:
                 self.clients.discard(ws)
 
+    @staticmethod
+    def _shift(value: Any, delta: timedelta, speed: float, origin: datetime) -> Any:
+        """Move recorded wall-clock times (keys starting `wall_`) to 'now', compressing
+        them by the replay speed so ages and durations look right."""
+        if isinstance(value, dict):
+            out = {}
+            for k, v in value.items():
+                if k.startswith("wall_") and isinstance(v, str) and v.endswith("Z"):
+                    t = parse_ts(v)
+                    out[k] = iso(origin + (t - origin) / speed + delta)
+                else:
+                    out[k] = Player._shift(v, delta, speed, origin)
+            return out
+        if isinstance(value, list):
+            return [Player._shift(v, delta, speed, origin) for v in value]
+        return value
+
+    async def _link_alerts(self, run_id: str, delta: timedelta, origin: datetime) -> None:
+        """Recordings made before runs announced their alerts: link them from the snapshot
+        DB (verdicts blanked; they arrive later in the recording with the Skeptic)."""
+        if db_state is None:
+            return
+        rows = db_state.conn.execute("SELECT * FROM alerts WHERE run_id = ?", (run_id,)).fetchall()
+        for row in rows:
+            alert = self._shift(
+                dict(row) | {"final_severity": None, "verdict": None}, delta, self.speed, origin
+            )
+            if alert["alert_id"] in self.alerts and self.alerts[alert["alert_id"]].get("verdict"):
+                continue
+            self.seq += 1
+            msg = {
+                "type": "alert.updated",
+                "seq": self.seq,
+                "wall_ts": wall_now(),
+                "payload": alert,
+            }
+            self.fold(msg)
+            await self.send(msg)
+
     async def play_forever(self) -> None:
+        origin = parse_ts(self.frames[0]["msg"]["wall_ts"]) if self.frames else datetime.now(UTC)
         while True:
             self.reset_fold()
+            delta = datetime.now(UTC) - origin
             await self.send(
                 {
                     "type": "hello",
@@ -119,9 +192,12 @@ class Player:
                 if gap:
                     await asyncio.sleep(gap)
                 self.seq += 1
-                msg = dict(frame["msg"], seq=self.seq, wall_ts=wall_now())
+                payload = self._shift(frame["msg"]["payload"], delta, self.speed, origin)
+                msg = dict(frame["msg"], payload=payload, seq=self.seq, wall_ts=wall_now())
                 self.fold(msg)
                 await self.send(msg)
+                if msg["type"] == "run.queued":
+                    await self._link_alerts(str(msg["payload"]["run_id"]), delta, origin)
             await asyncio.sleep(LOOP_PAUSE_S)
 
 
@@ -130,8 +206,18 @@ db_state: AppState | None = None
 
 
 def _db() -> AppState:
+    """The snapshot database, with scores recomputed as of the replay's current sim time,
+    so the cell drawer matches what the map shows at this point of the recording."""
     if db_state is None:
         raise HTTPException(404, f"no snapshot database next to the recording ({SNAPSHOT_DB.name})")
+    sim_now = (player.kpis or {}).get("sim_now") if player is not None else None
+    if sim_now:
+        from narcobob.harness.data import scores_at
+
+        bucket = db_state.bucket_of(parse_ts(sim_now)) - 1
+        if bucket != db_state.scored_bucket:
+            db_state.scores = scores_at(db_state.conn, db_state.settings, bucket)
+            db_state.scored_bucket = bucket
     return db_state
 
 
@@ -142,7 +228,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         raise SystemExit(f"recording not found: {RECORDING} (see docs/setup-guide.md)")
     player = Player(RECORDING, settings.replay_speed)
     if SNAPSHOT_DB.exists():
-        db_state = AppState.create(settings.model_copy(update={"db_path": SNAPSHOT_DB}))
+        db_state = AppState.create(settings.model_copy(update={"db_path": _local_db(SNAPSHOT_DB)}))
         for row in db_state.conn.execute("SELECT * FROM cell_scores"):
             from narcobob.harness.data import score_row_to_dict
 
@@ -202,8 +288,20 @@ async def ws(socket: WebSocket) -> None:
 @app.get("/api/cells/{cell}")
 def cell(cell: str) -> dict[str, Any]:
     detail = queries.cell_detail(_db(), cell)
-    if detail is None:
+    if detail is None or player is None:
         raise HTTPException(404, "cell not in the recording")
+    # Reveal only what the replay has played so far: the snapshot DB knows the future.
+    played = sorted(
+        (a for a in player.alerts.values() if a["cell"] == cell),
+        key=lambda a: a["wall_created_at"],
+        reverse=True,
+    )
+    judged = next((a for a in played if a.get("verdict")), None)
+    detail["alerts"] = played[:20]
+    detail["final_severity"] = judged["final_severity"] if judged else None
+    detail["verdict"] = judged["verdict"] if judged else None
+    if judged is None:
+        detail["latest_verdict"] = None
     return detail
 
 

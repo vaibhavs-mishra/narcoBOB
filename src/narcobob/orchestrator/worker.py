@@ -52,6 +52,7 @@ class Worker:
         """Queue a run. Beyond MAX_WAITING, the oldest waiting run merges into this one."""
         if len(self.waiting) >= MAX_WAITING:
             self._merge(self.waiting.pop(0), into=run_id)
+            asyncio.get_running_loop().create_task(self._announce_links(run_id))
         self.waiting.append(run_id)
         self._wake.set()
 
@@ -85,6 +86,12 @@ class Worker:
         self.conn.execute("UPDATE alerts SET run_id = ? WHERE run_id = ?", (into, old))
         self.conn.execute("DELETE FROM agent_runs WHERE run_id = ?", (old,))
         self.conn.commit()
+
+    async def _announce_links(self, run_id: str) -> None:
+        for alert in self.conn.execute(
+            "SELECT * FROM alerts WHERE run_id = ?", (run_id,)
+        ).fetchall():
+            await self.hub.broadcast("alert.updated", dict(alert))
 
     async def run_forever(self) -> None:
         self._last_call_rowid = self._max_rowid("tool_calls")

@@ -570,3 +570,43 @@ body {
   font: 12px/1.45 "Inter", sans-serif;
   border-radius: 3px;
 }
+
+/* map legend */
+.map-legend {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  background: rgba(17, 21, 28, 0.88);
+  border: 1px solid var(--border);
+  padding: 7px 10px;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--muted);
+  border-radius: 3px;
+  pointer-events: none;
+}
+.lg-ramp {
+  display: inline-block;
+  width: 44px;
+  height: 8px;
+  margin-right: 6px;
+  vertical-align: middle;
+  background: linear-gradient(90deg, #334155, #eab308, #f97316, #ef4444);
+}
+.lg-confirmed {
+  display: inline-block;
+  width: 12px;
+  height: 10px;
+  margin: 0 6px 0 16px;
+  vertical-align: middle;
+  border: 2px solid var(--red);
+  background: rgba(239, 68, 68, 0.16);
+}
+.lg-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 3px;
+  vertical-align: middle;
+}

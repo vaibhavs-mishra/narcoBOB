@@ -27,6 +27,7 @@ export function MapView() {
   const cells = useStore((s) => s.cells);
   const pings = useStore((s) => s.pings);
   const selected = useStore((s) => s.selectedCell);
+  const alerts = useStore((s) => s.alerts);
   const select = useStore((s) => s.select);
   const [view, setView] = useState<MapViewState | null>(null);
   const [now, setNow] = useState(() => performance.now());
@@ -53,6 +54,17 @@ export function MapView() {
 
   const data = useMemo(() => Object.values(cells).filter((c) => c.score >= 30 || c.severity !== "NORMAL"), [cells]);
   const livePings = useMemo(() => pings.filter((p) => now - p.at < 2500), [pings, now]);
+  // Hotspots the Skeptic confirmed at HIGH or above stay outlined after the map moves on.
+  const confirmed = useMemo(
+    () => [
+      ...new Set(
+        alerts
+          .filter((a) => a.verdict === "CONFIRMED" && (a.final_severity === "HIGH" || a.final_severity === "CRITICAL"))
+          .map((a) => a.cell),
+      ),
+    ],
+    [alerts],
+  );
 
   const layers = [
     new H3HexagonLayer<CellScore>({
@@ -71,6 +83,17 @@ export function MapView() {
       highlightColor: [34, 211, 238, 120],
       transitions: { getElevation: 600, getFillColor: 600 },
       onClick: (info: PickingInfo<CellScore>) => info.object && select(info.object.cell),
+    }),
+    new H3HexagonLayer<string>({
+      id: "confirmed",
+      data: confirmed,
+      getHexagon: (d) => d,
+      extruded: false,
+      filled: true,
+      stroked: true,
+      getFillColor: [239, 68, 68, 40],
+      getLineColor: [239, 68, 68, 255],
+      lineWidthMinPixels: 2,
     }),
     new H3HexagonLayer<string>({
       id: "selected",

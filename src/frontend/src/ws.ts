@@ -35,7 +35,9 @@ function open(): void {
     const msg = JSON.parse(ev.data) as WsMessage;
     const { seq } = useStore.getState();
     if (msg.type === "hello") {
+      // a new server session (or a replay loop restarting): resync from the snapshot
       useStore.getState().applyMessage(msg);
+      void refetch();
       return;
     }
     if (seq && msg.seq > seq + 1) {

@@ -55,7 +55,7 @@ Every variable has a working default; you only need to edit `.env` to use IBM Bo
 | `NARCOBOB_API_PORT` / `NARCOBOB_MCP_PORT` / `NARCOBOB_SIM_PORT` | `8000` / `8765` / `8001` | Local ports |
 | `NARCOBOB_DB_PATH` | `var/narcobob.db` | SQLite database (relative to `src/`) |
 | `NARCOBOB_RECORD` | `true` | Record every WebSocket message to `recordings/` |
-| `NARCOBOB_REPLAY_FILE` / `NARCOBOB_REPLAY_SPEED` | `recordings/demo_golden.jsonl` / `1` | What `make replay` plays, and how fast |
+| `NARCOBOB_REPLAY_FILE` / `NARCOBOB_REPLAY_SPEED` | `recordings/demo_golden.jsonl.gz` / `1` | What `make replay` plays, and how fast |
 | `VITE_API_URL` / `VITE_WS_URL` | `http://localhost:8000` / `ws://localhost:8000/ws` | Where the UI finds the API |
 
 ## 4. (Optional) Install IBM Bob Shell
@@ -106,7 +106,7 @@ live at one simulated day every 3 seconds.
 make replay
 ```
 
-Plays `recordings/demo_golden.jsonl`, a recorded session with real Bob agents, through the
+Plays `recordings/demo_golden.jsonl.gz`, a recorded session with real Bob agents, through the
 same UI. The top bar shows **REPLAY**.
 
 ## 6. Verify it works
@@ -141,5 +141,5 @@ Other tools: `uv run narcobob-harness list` lists the agent tools and who may ca
 | Map is black, no streets | Basemap blocked (offline) | The hexagons still render; the basemap needs internet (CARTO) |
 | UI shows "Waiting for the area configuration…" | API not running | Check the `api` line in the `make dev` output |
 | `address already in use` | A previous run is still up | Stop it (Ctrl-C) or free ports 8000/8001/8765/5173 |
-| `make replay` exits "recording not found" | No recording | `recordings/demo_golden.jsonl` ships with the repo; re-record with `scripts/save_recording.py` |
+| `make replay` exits "recording not found" | No recording | `recordings/demo_golden.jsonl.gz` ships with the repo; re-record with `scripts/save_recording.py` |
 | Want a fresh start | Old data | Top bar ⋯ → **Reset scenario**, or delete `src/var/` |

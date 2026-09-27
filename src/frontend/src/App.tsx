@@ -14,6 +14,15 @@ export default function App() {
       <AlertFeed />
       <main className="map">
         <MapView />
+        <div className="map-legend">
+          <div><span className="lg-ramp" /> score 30 → 100 (height and colour)</div>
+          <div><span className="lg-confirmed" /> confirmed by the Skeptic</div>
+          <div>
+            <span className="lg-dot" style={{ background: "var(--red)" }} /> overdose{" "}
+            <span className="lg-dot" style={{ background: "var(--cyan)" }} /> seizure{" "}
+            <span className="lg-dot" style={{ background: "var(--violet)" }} /> arrest
+          </div>
+        </div>
       </main>
       <CellDrawer />
       <BottomPanel />

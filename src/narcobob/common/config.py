@@ -60,6 +60,7 @@ class Settings(BaseSettings):
     api_port: int = Field(8000, alias="NARCOBOB_API_PORT")
     mcp_port: int = Field(8765, alias="NARCOBOB_MCP_PORT")
     sim_port: int = Field(8001, alias="NARCOBOB_SIM_PORT")
+    sim_autostart: bool = Field(True, alias="NARCOBOB_SIM_AUTOSTART")
     record: bool = Field(True, alias="NARCOBOB_RECORD")
     replay_file: Path = Field(Path("recordings/demo_golden.jsonl"), alias="NARCOBOB_REPLAY_FILE")
 

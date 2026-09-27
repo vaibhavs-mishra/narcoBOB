@@ -124,6 +124,15 @@ class Generator:
         self.injections.append(active)
         return active
 
+    def inject_spec(self, spec: InjectionSpec, start_day: int) -> ActiveInjection:
+        """Schedule an ad-hoc injection that is not in the scenario file (live surge button)."""
+        active = ActiveInjection(spec, start_day, self._target_cells(spec))
+        self.injections.append(active)
+        return active
+
+    def day_of(self, ts: datetime) -> int:
+        return int((ts - self.day_start(0)).total_seconds() // 86_400)
+
     def _target_cells(self, spec: InjectionSpec) -> list[int]:
         res = self.scenario.area.h3_res
         if spec.around is not None:

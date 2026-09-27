@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useStore } from "./store";
 import { AlertFeed } from "./components/AlertFeed";
 import { BottomPanel } from "./components/BottomPanel";
 import { CellDrawer } from "./components/CellDrawer";
@@ -8,8 +9,9 @@ import { connect } from "./ws";
 
 export default function App() {
   useEffect(() => connect(), []);
+  const hasSelection = useStore((s) => s.selectedCell !== null);
   return (
-    <div className="shell">
+    <div className={hasSelection ? "shell has-selection" : "shell"}>
       <TopBar />
       <AlertFeed />
       <main className="map">

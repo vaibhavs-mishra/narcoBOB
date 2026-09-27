@@ -13,9 +13,9 @@ function Light({ label, state }: { label: string; state: "ok" | "off" | "bad" })
   );
 }
 
-function Kpi({ label, value }: { label: string; value: string }) {
+function Kpi({ label, value, secondary = false }: { label: string; value: string; secondary?: boolean }) {
   return (
-    <div className="kpi">
+    <div className={secondary ? "kpi kpi-secondary" : "kpi"}>
       <span className="kpi-value mono">{value}</span>
       <span className="kpi-label">{label}</span>
     </div>
@@ -58,9 +58,9 @@ export function TopBar() {
         </Tooltip>
       </div>
       <div className="kpis">
-        <Kpi label="events / min" value={kpis ? Math.round(kpis.events_per_min).toLocaleString() : "—"} />
+        <Kpi secondary label="events / min" value={kpis ? Math.round(kpis.events_per_min).toLocaleString() : "—"} />
         <Kpi label="active alerts" value={kpis ? String(kpis.active_alerts) : "—"} />
-        <Kpi label="cells elevated" value={kpis ? `${kpis.cells_elevated} / ${kpis.cells_monitored}` : "—"} />
+        <Kpi secondary label="cells elevated" value={kpis ? `${kpis.cells_elevated} / ${kpis.cells_monitored}` : "—"} />
         <Kpi label="sim clock (UTC)" value={simClock(kpis?.sim_now ?? sim?.sim_now)} />
       </div>
       <div className="status">

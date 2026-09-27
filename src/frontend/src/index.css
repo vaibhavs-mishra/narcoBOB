@@ -48,16 +48,21 @@ body {
 }
 
 /* ── layout ─────────────────────────────────────────────────────────────── */
+/* Fluid layout: panel sizes follow the viewport, within sensible bounds. */
 .shell {
+  --left: clamp(230px, 19vw, 380px);
+  --right: clamp(300px, 23vw, 460px);
+  --bottom: clamp(170px, 26vh, 340px);
   display: grid;
-  grid-template-columns: 320px minmax(0, 1fr) 380px;
-  grid-template-rows: 52px minmax(0, 1fr) 250px;
+  grid-template-columns: var(--left) minmax(0, 1fr) var(--right);
+  grid-template-rows: 52px minmax(0, 1fr) var(--bottom);
   grid-template-areas:
     "top top top"
     "alerts map drawer"
     "bottom bottom bottom";
   height: 100vh;
-  min-width: 1280px;
+  height: 100dvh;
+  width: 100%;
 }
 .topbar {
   grid-area: top;
@@ -149,8 +154,18 @@ body {
 }
 .kpis {
   display: flex;
-  gap: 22px;
+  gap: clamp(12px, 1.4vw, 26px);
   margin-left: auto;
+  min-width: 0;
+}
+.topbar,
+.brand,
+.status,
+.kpi {
+  white-space: nowrap;
+}
+.topbar {
+  gap: clamp(10px, 1.5vw, 24px);
 }
 .kpi {
   display: flex;
@@ -458,7 +473,7 @@ body {
 }
 .lane {
   display: grid;
-  grid-template-columns: 290px minmax(0, 1fr) 380px;
+  grid-template-columns: minmax(200px, 290px) minmax(0, 1fr) minmax(140px, 30%);
   align-items: center;
   gap: 12px;
   padding: 5px 0;
@@ -609,4 +624,95 @@ body {
   border-radius: 50%;
   margin-right: 3px;
   vertical-align: middle;
+}
+
+/* ── responsive ─────────────────────────────────────────────────────────── */
+
+/* Large displays: slightly larger type. */
+@media (min-width: 2200px) {
+  body {
+    font-size: 14px;
+  }
+  .kpi-value {
+    font-size: 17px;
+  }
+}
+
+/* The top bar sheds its least important items first. */
+@media (max-width: 1500px) {
+  .area {
+    display: none;
+  }
+}
+@media (max-width: 1250px) {
+  .kpi-secondary {
+    display: none;
+  }
+}
+
+/* Medium widths: the cell drawer floats over the map, only while a cell is selected. */
+@media (max-width: 1200px) {
+  .shell {
+    grid-template-columns: var(--left) minmax(0, 1fr);
+    grid-template-areas:
+      "top top"
+      "alerts map"
+      "bottom bottom";
+  }
+  .drawer {
+    position: absolute;
+    top: 52px;
+    right: 0;
+    bottom: var(--bottom);
+    width: min(400px, 60vw);
+    z-index: 20;
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.45);
+  }
+  .shell:not(.has-selection) .drawer {
+    display: none;
+  }
+}
+
+/* Narrow screens: stack everything and let the page scroll. */
+@media (max-width: 820px) {
+  body {
+    overflow: auto;
+  }
+  .shell {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 100dvh;
+  }
+  .topbar {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 8px 12px;
+    row-gap: 6px;
+  }
+  .kpis {
+    margin-left: 0;
+    order: 3;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .map {
+    height: 55vh;
+    flex: none;
+  }
+  .alert-feed {
+    max-height: 40vh;
+  }
+  .drawer {
+    position: static;
+    width: auto;
+    box-shadow: none;
+  }
+  .bottom {
+    min-height: 300px;
+  }
+  .lane {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
 }

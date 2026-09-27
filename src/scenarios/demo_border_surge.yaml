@@ -1,0 +1,37 @@
+# Demo scenario: Amritsar–Tarn Taran border belt. SIMULATED data only.
+# Story: a new cross-border supply route shows up in overdose admissions near the
+# border (S1) before seizures catch it, then spills into neighbouring cells (S2).
+# D1–D3 are decoys the system must NOT escalate: a small-count blip, a hospital
+# feed outage, and a one-day police raid.
+name: demo_border_surge
+start_date: "2026-07-01"
+area: { bbox: [31.20, 74.50, 31.90, 75.20], h3_res: 7 }
+background:
+  centres:
+    - { lat: 31.634, lon: 74.872, weight: 1.0, sigma_km: 8 }   # Amritsar
+    - { lat: 31.451, lon: 74.928, weight: 0.5, sigma_km: 6 }   # Tarn Taran
+    - { lat: 31.550, lon: 74.630, weight: 1.0, sigma_km: 5 }   # border villages (Attari–Khasa belt)
+  rural_rate: 0.02                     # events/cell/day baseline
+  rates_per_day: { overdose: 45, seizure: 30, arrest: 25 }   # area totals, pre-thinning
+  weekly_od_bump: 1.2                  # Sat/Sun multiplier
+  enforcement_field: { mode: gaussian_mix, min: 0.3, max: 1.0, sigma_km: 10 }
+sources:
+  hospital:
+    - { id: civil_amritsar,  lat: 31.630, lon: 74.870 }
+    - { id: gmc_amritsar,    lat: 31.645, lon: 74.885 }
+    - { id: civil_tarntaran, lat: 31.450, lon: 74.925 }
+  police:
+    - { id: ps_01, lat: 31.630, lon: 74.870 }   # Amritsar city
+    - { id: ps_02, lat: 31.660, lon: 74.950 }   # Amritsar east
+    - { id: ps_03, lat: 31.450, lon: 74.925 }   # Tarn Taran
+    - { id: ps_04, lat: 31.840, lon: 74.760 }   # Ajnala
+    - { id: ps_05, lat: 31.560, lon: 75.020 }   # Jandiala Guru
+    - { id: ps_06, lat: 31.280, lon: 74.860 }   # Patti
+injections:
+  - { id: S1, kind: surge,  at_day: 62, lat: 31.55, lon: 74.62, radius_cells: 1, types: [overdose], multiplier: 3.0, ramp_days: 7 }
+  - { id: S2, kind: surge,  at_day: 67, around: S1, ring: 2, types: [overdose], multiplier: 1.6, ramp_days: 5 }
+  - { id: D1, kind: surge,  at_day: 64, lat: 31.82, lon: 75.10, radius_cells: 0, types: [overdose], absolute: 5, ramp_days: 2 }
+  - { id: D2, kind: outage, at_day: 63, source: "hospital:civil_tarntaran", duration_days: 3 }
+  - { id: D3, kind: raid,   at_day: 65, lat: 31.64, lon: 74.88, types: [seizure], multiplier: 8.0, duration_days: 1 }
+live_injectable: [S1]                  # the "INJECT SURGE" button triggers these
+auto_injections: false                 # demo: button-driven; the backtest forces true

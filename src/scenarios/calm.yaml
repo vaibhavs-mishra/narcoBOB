@@ -1,0 +1,28 @@
+# False-alarm test: same world as demo_border_surge, no injections. SIMULATED data only.
+name: calm
+start_date: "2026-07-01"
+area: { bbox: [31.20, 74.50, 31.90, 75.20], h3_res: 7 }
+background:
+  centres:
+    - { lat: 31.634, lon: 74.872, weight: 1.0, sigma_km: 8 }   # Amritsar
+    - { lat: 31.451, lon: 74.928, weight: 0.5, sigma_km: 6 }   # Tarn Taran
+    - { lat: 31.550, lon: 74.630, weight: 1.0, sigma_km: 5 }   # border villages (Attari–Khasa belt)
+  rural_rate: 0.02                     # events/cell/day baseline
+  rates_per_day: { overdose: 45, seizure: 30, arrest: 25 }   # area totals, pre-thinning
+  weekly_od_bump: 1.2                  # Sat/Sun multiplier
+  enforcement_field: { mode: gaussian_mix, min: 0.3, max: 1.0, sigma_km: 10 }
+sources:
+  hospital:
+    - { id: civil_amritsar,  lat: 31.630, lon: 74.870 }
+    - { id: gmc_amritsar,    lat: 31.645, lon: 74.885 }
+    - { id: civil_tarntaran, lat: 31.450, lon: 74.925 }
+  police:
+    - { id: ps_01, lat: 31.630, lon: 74.870 }   # Amritsar city
+    - { id: ps_02, lat: 31.660, lon: 74.950 }   # Amritsar east
+    - { id: ps_03, lat: 31.450, lon: 74.925 }   # Tarn Taran
+    - { id: ps_04, lat: 31.840, lon: 74.760 }   # Ajnala
+    - { id: ps_05, lat: 31.560, lon: 75.020 }   # Jandiala Guru
+    - { id: ps_06, lat: 31.280, lon: 74.860 }   # Patti
+injections: []
+live_injectable: []
+auto_injections: false

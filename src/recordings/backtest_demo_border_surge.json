@@ -1,0 +1,66 @@
+{
+  "scenario": "demo_border_surge",
+  "seed": 42,
+  "sim_days": 90,
+  "weights": [
+    0.35,
+    0.25,
+    0.2,
+    0.2
+  ],
+  "thresholds": [
+    65,
+    82,
+    90
+  ],
+  "generated_at": "2026-09-27T18:16:52+00:00",
+  "data": "SIMULATED",
+  "detection": {
+    "onset_day": 62,
+    "days_to_high": 4,
+    "days_to_critical": 5,
+    "precision_at_5": 0.328,
+    "s1_final_verdicts": [
+      "CONFIRMED",
+      "REJECTED"
+    ]
+  },
+  "baselines": {
+    "raw_overdose_rank_days_to_top5": 3,
+    "raw_seizure_rank_days_to_top5": null
+  },
+  "decoys": {
+    "D1": {
+      "kind": "surge",
+      "alerts_pre_skeptic": 1,
+      "alerts_post_skeptic": 0,
+      "verdicts": [
+        "DOWNGRADED"
+      ],
+      "raw_seizure_rank_flags_it": false
+    },
+    "D2": {
+      "kind": "outage",
+      "alerts_pre_skeptic": 1,
+      "alerts_post_skeptic": 0,
+      "verdicts": [
+        "DOWNGRADED"
+      ],
+      "raw_seizure_rank_flags_it": true
+    },
+    "D3": {
+      "kind": "raid",
+      "alerts_pre_skeptic": 0,
+      "alerts_post_skeptic": 0,
+      "verdicts": [],
+      "raw_seizure_rank_flags_it": true
+    }
+  },
+  "calm": {
+    "scenario": "calm",
+    "sim_days": 55,
+    "alerts_per_month_pre_skeptic": 6.55,
+    "alerts_per_month_post_skeptic": 3.82,
+    "critical_alerts": 1
+  }
+}

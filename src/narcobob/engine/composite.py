@@ -19,15 +19,20 @@ EPS = 1e-6
 DRIVERS = ("accel", "div", "spill", "gi")
 
 
-def robust_z(v: Floats) -> Floats:
-    """(v − median) / (1.4826·MAD + ε), clipped to ±4.
+SCALE_FLOOR = 1.0  # inputs are already in noise units, so nothing is sharper than 1
 
-    When most cells are identical (MAD = 0) the ε keeps this finite; the clip then stops
-    the handful of cells that differ from dominating everything.
+
+def robust_z(v: Floats, mask: npt.NDArray[np.bool_] | None = None) -> Floats:
+    """(v − median) / max(1.4826·MAD, 1), clipped to ±4.
+
+    The median and MAD come from `mask` (cells with any history), so the empty
+    countryside does not collapse the spread. The scale floor keeps a MAD of 0 finite.
     """
-    median = float(np.median(v))
-    mad = float(np.median(np.abs(v - median)))
-    result: Floats = np.clip((v - median) / (1.4826 * mad + EPS), -Z_CLIP, Z_CLIP)
+    ref = v if mask is None or not mask.any() else v[mask]
+    median = float(np.median(ref))
+    mad = float(np.median(np.abs(ref - median)))
+    scale = max(1.4826 * mad, SCALE_FLOOR) + EPS
+    result: Floats = np.clip((v - median) / scale, -Z_CLIP, Z_CLIP)
     return result
 
 
@@ -68,18 +73,22 @@ def score_cells(
     if counts.shape[2] < 2 * window:
         raise ValueError(f"need at least {2 * window} buckets, got {counts.shape[2]}")
     smoothed = smooth(counts, grid)
-    od = comp.od_series(smoothed)
-    accel = comp.acceleration(od, window)
+    accel = comp.acceleration_z(comp.od_series(smoothed), window)
+    active = counts.sum(axis=(1, 2)) > 0
+    # Gi* pools neighbours itself, so it gets raw counts (smoothing first would double-count).
+    excess = comp.excess_z(counts[:, 0, :], window)
     z = {
-        "accel": robust_z(accel),
-        "div": robust_z(comp.divergence(smoothed, window)),
-        "spill": robust_z(comp.spillover(accel, grid)),
-        "gi": np.clip(gi_star(od[:, -window:].sum(axis=1), grid), -Z_CLIP, Z_CLIP),
+        "accel": robust_z(accel, active),
+        "div": robust_z(comp.divergence_z(counts, window), active),
+        "spill": robust_z(comp.spillover(accel, grid), active),
+        "gi": np.clip(gi_star(excess, grid), -Z_CLIP, Z_CLIP),
     }
     w = dict(zip(DRIVERS, weights, strict=True))
     contrib = {d: w[d] * z[d] for d in DRIVERS}
     score = score_from_r(sum(contrib.values(), np.zeros(grid.n)))
-    support = counts[:, :, -window:].sum(axis=(1, 2)).astype(np.int64)
+    # Support uses the same footprint as the scores: the cell plus its ring-1 neighbours.
+    own = counts[:, :, -window:].sum(axis=(1, 2))
+    support = (own + grid.neighbour_sum(own)).astype(np.int64)
     confidence = [confidence_of(int(s)) for s in support]
     severity = [
         severity_of(int(s), float(g), c, thresholds)

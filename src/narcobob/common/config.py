@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     )
     # watch, high, critical
     thresholds: Annotated[tuple[int, int, int], NoDecode] = Field(
-        (60, 75, 88), alias="NARCOBOB_THRESHOLDS"
+        (65, 82, 90), alias="NARCOBOB_THRESHOLDS"
     )
     alert_cooldown_s: float = Field(120, alias="NARCOBOB_ALERT_COOLDOWN_S", ge=0)
     alert_coalesce_s: float = Field(15, alias="NARCOBOB_ALERT_COALESCE_S", ge=0)

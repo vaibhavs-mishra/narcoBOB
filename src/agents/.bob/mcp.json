@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "narcobob": {
+      "url": "http://127.0.0.1:8765/mcp",
+      "alwaysAllow": [
+        "get_run_context",
+        "get_data_quality",
+        "get_cell_scores",
+        "get_cell_timeseries",
+        "get_neighbors",
+        "get_support",
+        "run_sensitivity",
+        "get_findings",
+        "submit_findings",
+        "submit_report"
+      ]
+    }
+  }
+}

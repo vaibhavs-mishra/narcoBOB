@@ -9,7 +9,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Annotated, Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 # `src/` — every relative path in the config is resolved against it.
@@ -56,6 +56,7 @@ class Settings(BaseSettings):
     agents_mode: Literal["bob", "fallback"] = Field("bob", alias="NARCOBOB_AGENTS_MODE")
     bob_bin: str = Field("bob", alias="BOB_BIN")
     bob_agent_timeout_s: float = Field(180, alias="BOB_AGENT_TIMEOUT_S", gt=0)
+    bob_api_key: SecretStr | None = Field(None, alias="BOB_API_KEY")
     api_port: int = Field(8000, alias="NARCOBOB_API_PORT")
     mcp_port: int = Field(8765, alias="NARCOBOB_MCP_PORT")
     sim_port: int = Field(8001, alias="NARCOBOB_SIM_PORT")
@@ -83,3 +84,18 @@ class Settings(BaseSettings):
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     return Settings()
+
+
+def public_config(settings: Settings) -> dict[str, object]:
+    """The subset of config that the UI and agents may see (`PublicConfig`)."""
+    accel, div, spill, gi = settings.weights
+    watch, high, critical = settings.thresholds
+    return {
+        "area_name": settings.area_name,
+        "bbox": list(settings.area_bbox),
+        "h3_res": settings.h3_res,
+        "bucket_sim_seconds": settings.bucket_sim_seconds,
+        "weights": {"accel": accel, "div": div, "spill": spill, "gi": gi},
+        "thresholds": {"watch": watch, "high": high, "critical": critical},
+        "agents_mode": settings.agents_mode,
+    }

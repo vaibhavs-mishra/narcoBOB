@@ -25,12 +25,14 @@ export function useRunVersion(runId: string | null): string {
 
 export function useRunLog(runId: string | null): { log: RunLog; findings: Finding[] } | null {
   const version = useRunVersion(runId);
+  // a queued run has nothing stored yet (and some are merged away before they start)
+  const queued = useStore((s) => (runId ? s.runs[runId]?.summary.status === "QUEUED" : false));
   const key = runId ? `${runId}|${version}` : "";
   const [data, setData] = useState<{ key: string; value: { log: RunLog; findings: Finding[] } } | null>(null);
   const [retry, setRetry] = useState(0);
   const cached = key ? cache.get(key) : undefined;
   useEffect(() => {
-    if (!runId || cache.has(key)) return;
+    if (!runId || queued || cache.has(key)) return;
     let cancelled = false;
     fetchRun(runId)
       .then((value) => {
@@ -38,12 +40,12 @@ export function useRunLog(runId: string | null): { log: RunLog; findings: Findin
         if (!cancelled) setData({ key, value });
       })
       .catch(() => {
-        if (!cancelled) window.setTimeout(() => setRetry((n) => n + 1), 3000);
+        if (!cancelled && retry < 3) window.setTimeout(() => setRetry((n) => n + 1), 3000);
       });
     return () => {
       cancelled = true;
     };
-  }, [runId, key, retry]);
+  }, [runId, key, retry, queued]);
   // keep showing the previous version of the same run while the next one loads
   return cached ?? (data && runId && data.key.startsWith(runId) ? data.value : null);
 }

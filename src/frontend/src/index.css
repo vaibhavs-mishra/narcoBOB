@@ -980,3 +980,32 @@ body {
     display: none;
   }
 }
+
+/* ── cell trend (expandable) ────────────────────────────────────────────── */
+.section-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.section-row .bp6-button {
+  letter-spacing: normal;
+  text-transform: none;
+  font-weight: 400;
+}
+.spark-click {
+  cursor: zoom-in;
+}
+.trend-dialog {
+  width: min(1100px, 92vw);
+  background: var(--panel);
+}
+.trend-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.trend-chart {
+  height: min(460px, 55vh);
+  margin-bottom: 8px;
+}

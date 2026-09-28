@@ -152,8 +152,10 @@ async def get_state() -> dict[str, Any]:
     return queries.snapshot(state, await sim_status(), hub.seq)
 
 
+# Handlers that read SQLite are `async def` on purpose: they run on the event-loop thread,
+# the only thread that uses the shared connection (thread-pool handlers would race on it).
 @app.get("/api/cells/{cell}")
-def get_cell(cell: str) -> dict[str, Any]:
+async def get_cell(cell: str) -> dict[str, Any]:
     detail = queries.cell_detail(state, cell)
     if detail is None:
         raise HTTPException(404, "cell not in the monitored area")
@@ -161,19 +163,19 @@ def get_cell(cell: str) -> dict[str, Any]:
 
 
 @app.get("/api/cells/{cell}/timeseries")
-def get_timeseries(
+async def get_timeseries(
     cell: str, types: str = "overdose,seizure,arrest", buckets: int = Query(28, ge=1, le=60)
 ) -> dict[str, Any]:
     return queries.timeseries(state, cell, types.split(","), buckets)
 
 
 @app.get("/api/alerts")
-def get_alerts(limit: int = Query(50, ge=1, le=500)) -> list[dict[str, Any]]:
+async def get_alerts(limit: int = Query(50, ge=1, le=500)) -> list[dict[str, Any]]:
     return queries.alert_rows(state, limit)
 
 
 @app.get("/api/runs/{run_id}")
-def get_run(run_id: str) -> dict[str, Any]:
+async def get_run(run_id: str) -> dict[str, Any]:
     run = queries.full_run(state, run_id)
     if run is None:
         raise HTTPException(404, "run not found")
@@ -181,7 +183,7 @@ def get_run(run_id: str) -> dict[str, Any]:
 
 
 @app.get("/api/runs/{run_id}/log")
-def get_run_log(run_id: str) -> dict[str, Any]:
+async def get_run_log(run_id: str) -> dict[str, Any]:
     found = queries.run_log(state, run_id)
     if found is None:
         raise HTTPException(404, "run not found")
@@ -189,7 +191,7 @@ def get_run_log(run_id: str) -> dict[str, Any]:
 
 
 @app.get("/api/reports/{run_id}")
-def get_report(run_id: str) -> dict[str, Any]:
+async def get_report(run_id: str) -> dict[str, Any]:
     report = queries.report(state, run_id)
     if report is None:
         raise HTTPException(404, "no report for this run yet")

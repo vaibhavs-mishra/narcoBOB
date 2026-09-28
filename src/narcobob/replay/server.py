@@ -255,8 +255,10 @@ def health() -> dict[str, Any]:
     return {"ok": True, "api": True, "mcp": False, "bob": "disabled", "mode": "replay"}
 
 
+# Handlers that read SQLite are `async def` on purpose: they run on the event-loop thread,
+# the only thread that uses the shared connection (thread-pool handlers would race on it).
 @app.get("/api/state")
-def state() -> dict[str, Any]:
+async def state() -> dict[str, Any]:
     assert player is not None
     return player.snapshot()
 
@@ -286,7 +288,7 @@ async def ws(socket: WebSocket) -> None:
 
 
 @app.get("/api/cells/{cell}")
-def cell(cell: str) -> dict[str, Any]:
+async def cell(cell: str) -> dict[str, Any]:
     detail = queries.cell_detail(_db(), cell)
     if detail is None or player is None:
         raise HTTPException(404, "cell not in the recording")
@@ -306,14 +308,14 @@ def cell(cell: str) -> dict[str, Any]:
 
 
 @app.get("/api/cells/{cell}/timeseries")
-def timeseries(
+async def timeseries(
     cell: str, types: str = "overdose,seizure,arrest", buckets: int = Query(28, ge=1, le=60)
 ) -> dict[str, Any]:
     return queries.timeseries(_db(), cell, types.split(","), buckets)
 
 
 @app.get("/api/runs/{run_id}")
-def run_detail(run_id: str) -> dict[str, Any]:
+async def run_detail(run_id: str) -> dict[str, Any]:
     found = queries.full_run(_db(), run_id)
     if found is None:
         raise HTTPException(404, "run not found")
@@ -321,7 +323,7 @@ def run_detail(run_id: str) -> dict[str, Any]:
 
 
 @app.get("/api/runs/{run_id}/log")
-def run_log(run_id: str) -> dict[str, Any]:
+async def run_log(run_id: str) -> dict[str, Any]:
     found = queries.run_log(_db(), run_id)
     if found is None:
         raise HTTPException(404, "run not found")
@@ -329,7 +331,7 @@ def run_log(run_id: str) -> dict[str, Any]:
 
 
 @app.get("/api/reports/{run_id}")
-def report(run_id: str) -> dict[str, Any]:
+async def report(run_id: str) -> dict[str, Any]:
     found = queries.report(_db(), run_id)
     if found is None:
         raise HTTPException(404, "no report for this run")

@@ -4,6 +4,7 @@ import { Line, LineChart, ResponsiveContainer, Tooltip as ChartTooltip, XAxis, Y
 import { api } from "../api";
 import type { CellDetail, Driver, Timeseries } from "../contracts";
 import { revealPanel } from "../layout/layouts";
+import { TrendDialog } from "./TrendDialog";
 import { useStore } from "../store";
 import { driverLabel, severityColor, tokens, verdictIntent } from "../theme";
 
@@ -83,6 +84,7 @@ export function CellDrawer() {
   const [detail, setDetail] = useState<CellDetail | null>(null);
   const [ts, setTs] = useState<Timeseries | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [trendOpen, setTrendOpen] = useState(false);
 
   // refetch when the cell changes, and whenever its live score or verdict changes
   const version = live ? `${live.score}|${live.verdict ?? ""}|${live.sim_ts}` : "";
@@ -140,8 +142,16 @@ export function CellDrawer() {
       </div>
       <h3 className="section">Why this score</h3>
       <Components d={detail} />
-      <h3 className="section">Last 28 sim-days</h3>
-      {ts && <Spark ts={ts} />}
+      <h3 className="section section-row">
+        Last 28 sim-days
+        <Button minimal small icon="maximize" text="Expand" onClick={() => setTrendOpen(true)} />
+      </h3>
+      {ts && (
+        <div className="spark-click" onClick={() => setTrendOpen(true)} title="Click to expand">
+          <Spark ts={ts} />
+        </div>
+      )}
+      <TrendDialog cell={detail.cell} isOpen={trendOpen} onClose={() => setTrendOpen(false)} />
       <h3 className="section">Skeptic</h3>
       {v ? (
         <div className="verdict">

@@ -118,8 +118,12 @@ same UI. The top bar shows **REPLAY**.
 3. The **Agents** tab shows the four Narclings working: Steward → Analyst → Skeptic → Writer
    (seconds in fallback mode; about 3–5 minutes with Bob). Alerts then show the Skeptic's
    verdict (CONFIRMED / DOWNGRADED / REJECTED).
-4. Click an alert: the drawer shows the score breakdown, trends and the Skeptic's checks.
-   **Open brief** shows the intelligence brief with enforcement *and* treatment actions.
+4. Click an alert: the Cell detail panel shows the score breakdown, trends and the Skeptic's
+   checks. **Open brief** shows the intelligence brief with enforcement *and* treatment actions.
+5. Switch to **Observability** (top bar) to see each run's agent log: steps, MCP tool calls
+   (rejected calls in red) and findings, plus each step's Bob Shell console output.
+   Panels resize, drag, float and pop out; **Layout → Reset layout** restores the default.
+   Press **?** for on-screen help.
 
 Automated checks:
 

@@ -62,7 +62,7 @@ graph LR
 | Orchestrator (`narcobob/orchestrator`) | asyncio subprocesses | Deterministic state machine; runs `bob run --mode …` headless (argument list, no shell); verifies output; retry; fallback; applies verdicts; streams agent activity |
 | Fallback agents | Python + Jinja2 | Rule-based Steward/Analyst/Skeptic/Writer using the same tools; schema-identical outputs |
 | Storage | SQLite, WAL mode | Single file; the agents' shared blackboard |
-| UI (`src/frontend`) | React 19, Blueprint.js, deck.gl H3HexagonLayer, MapLibre, Zustand, Recharts | Live map, alert feed, cell drawer, agent swim-lanes, brief viewer, event ticker |
+| UI (`src/frontend`) | React 19, Blueprint.js, dockview, deck.gl H3HexagonLayer, MapLibre, Zustand, Recharts | Dockable command view (live map, alert feed, cell detail, agent swim-lanes, brief, event ticker) and an Observability view (runs, agent log of every step / tool call / finding, Bob console via `GET /api/runs/{id}/log`); on-screen help |
 | Replay (`narcobob/replay`) | FastAPI | Serves a recorded real session over the same interface (demo insurance) |
 | Backtest (`narcobob/backtest`) | NumPy | Offline scenario runs, detection/decoy/false-alarm metrics, naive baselines |
 

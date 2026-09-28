@@ -110,3 +110,10 @@ escalation from volume.
 5. Clicking the cell opens the evidence: score gauge, component contributions,
    overdose-vs-enforcement trend, the Skeptic's five checks. **Open brief** shows the
    officer-ready report.
+6. The **Observability** view shows exactly what the agents did: every step, every MCP tool
+   call (with latency, and any call the harness rejected), every finding, and each step's
+   raw Bob Shell console output.
+
+Every panel can be resized, dragged to a new position, floated over the page or popped out
+into its own window; the layout is remembered. The **?** button (or the `?` key) marks each
+part of the screen with a short explanation.

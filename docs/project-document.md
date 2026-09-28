@@ -89,6 +89,7 @@ Full details: [architecture.md](architecture.md).
 | deck.gl, MapLibre GL, react-map-gl | 3D map rendering | vis.gl / MapLibre, npm (open source) |
 | CARTO dark-matter basemap | Map tiles | CARTO, © OpenStreetMap contributors |
 | Zustand, Recharts, react-markdown, remark-gfm | UI state, charts, brief rendering | npm (open source) |
+| dockview | Dockable, resizable, pop-out panel layout | npm (open source) |
 | uv, ruff, mypy, pytest, oxlint | Packaging, linting, typing, tests | Astral, PyPI, npm (open source) |
 | Statistical methods: Getis-Ord Gi\*, robust z-scores (median/MAD), OLS trends, Dirichlet weight sensitivity | Scoring engine | Standard spatial-statistics literature; implemented from scratch in `src/narcobob/engine/` |
 | Public figures cited in the docs | Problem framing | NDDTC–AIIMS *Magnitude of Substance Use in India* (PIB, 2019); NCRB *Crime in India 2021* (via The Tribune, 2022) |

@@ -1,6 +1,6 @@
-TODO-PASTE-VIDEO-URL (upload demo/narcobob-demo.mp4 to YouTube unlisted / Drive and put the link on this line)
+https://github.com/vaibhavs-mishra/narcoBOB/blob/main/demo/narcobob-demo.mp4
 
-Video: 3 min 52 s, no audio.
+The video file is in this repository: demo/narcobob-demo.mp4 (3 min 52 s, no audio).
 
 What it shows: a recorded real IBM Bob Shell session played back through the full UI
 (`make replay`), at 1.5x speed. The event feed is simulated; the pipeline and the Bob

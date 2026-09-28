@@ -9,51 +9,64 @@
 # =============================================================================
 
 team:
-  name: ""                             # REQUIRED — e.g., "Orion Squad"
-  track: ""                            # REQUIRED — one of: AI | DevOps | Sustainability | Open
+  name: "BOB"                          # REQUIRED — e.g., "Orion Squad"
+  track: "AI"                          # REQUIRED — one of: AI | DevOps | Sustainability | Open
   lead:
-    name: ""                           # REQUIRED — e.g., "Alice Chen"
-    email: ""                          # REQUIRED — e.g., "alice.chen@ibm.com"
+    name: "Vaibhav Shankar Mishra"     # REQUIRED — e.g., "Alice Chen"
+    email: "vaibhav.mscs25@gj.nfsu.edu.in"  # REQUIRED — e.g., "alice.chen@ibm.com"
   members:
-    - name: ""                         # REQUIRED — Team member 1
+    - name: "Pranjal Kumar Singh"      # REQUIRED — Team member 1
       email: ""
-    - name: ""                         # Add more members by copying the two lines above
-      email: ""
-    - name: ""
-      email: ""
+    - name: "Sahil Jain"
+      email: "sahil.mscs25@gj.nfsu.edu.in"
+    - name: "Parinit Sinha"
+      email: "parinit.mscs25@gj.nfsu.edu.in"
 
 submission:
-  title: ""                            # REQUIRED — Project display name, e.g., "SmartOps Dashboard"
+  title: "NarcoBob: real-time narcotics hotspot intelligence, reviewed by IBM Bob agents"  # REQUIRED
 
   problem_statement: >                 # REQUIRED — 1-3 sentences. What problem? Who has it?
-    Replace this text with a concise description of the real-world problem
-    your project addresses and who experiences it.
+    District narcotics intelligence in Punjab is reactive and enforcement-biased: seizure and
+    arrest counts, which measure police activity, are read as drug activity, while hospital
+    overdose data sits in a separate silo, so a new supply route can harm people for weeks
+    before it shows up in monthly statistics.
 
   solution_summary: >                  # REQUIRED — 1-3 sentences. What did you build?
-    Replace this text with a clear description of your solution
-    and how it addresses the problem above.
+    A deterministic engine scores every H3 hexagon of a district every two seconds for
+    escalating harm, with harm-versus-enforcement divergence as a first-class signal. When an
+    area crosses a threshold, four IBM Bob Shell custom modes (the Narclings: Data Steward,
+    Spatial Analyst, Skeptic, Intel Writer) review it headless through a hardened MCP tool
+    harness and publish a brief with enforcement and treatment actions, streamed live into a
+    command-centre UI.
 
   key_features:                        # REQUIRED — List 3 to 5 specific features you implemented
-    - ""                               # e.g., "Real-time pipeline anomaly detection using watsonx.ai"
-    - ""
-    - ""
-    - ""                               # optional 4th
-    - ""                               # optional 5th
+    - "Explainable 0–100 escalation score per H3 cell: acceleration, harm-vs-enforcement divergence, spillover and Getis-Ord Gi*, each against the cell's own noise"
+    - "IBM Bob Shell as a headless multi-agent runtime: four custom modes (Steward → Analyst → Skeptic → Writer) acting only through a 10-tool MCP harness with per-agent allowlists, budgets and full tracing"
+    - "Adversarial Skeptic agent: five checks on evidence frozen at the alert; its verdict is the final severity (confirms the planted supply route, downgrades decoys)"
+    - "Live command centre with an Observability view: 3D hexagon map, alert feed, agent swim-lanes, every MCP tool call and each step's Bob console, dockable and pop-out panels"
+    - "Never a single point of failure: deterministic fallback agents with identical schemas, and replay of a recorded real Bob session"
 
   tech_stack:
-    languages: []                      # REQUIRED — e.g., ["Python", "TypeScript"]
-    frameworks: []                     # e.g., ["FastAPI", "React"]
-    ibm_technologies: []               # e.g., ["watsonx.ai", "IBM Bob", "IBM Cloud Functions"]
-    databases: []                      # e.g., ["PostgreSQL", "Redis"]
-    other: []                          # e.g., ["Docker", "GitHub Actions", "Slack API"]
+    languages: ["Python", "TypeScript"]
+    frameworks: ["FastAPI", "asyncio", "Pydantic", "NumPy", "h3", "MCP Python SDK (FastMCP)", "React", "Vite", "Blueprint.js", "deck.gl", "MapLibre", "dockview", "Zustand", "Recharts"]
+    ibm_technologies: ["IBM Bob Shell: four headless custom modes are the agent runtime (src/agents/.bob/)", "IBM Bob Shell MCP integration: agents act only through the narcobob MCP harness", "IBM Bob Shell headless CLI (bob run --mode) driven by the orchestrator", "Full list: docs/ibm-bob-usage.md"]
+    databases: ["SQLite (WAL mode)"]
+    other: ["uv", "honcho", "pytest", "ruff", "mypy", "oxlint", "CARTO basemap (OpenStreetMap data)"]
 
   what_we_are_most_proud_of: >         # Optional but recommended — guides judges to your best work
-    Replace with what aspect of the submission you consider strongest
-    and want judges to pay special attention to.
+    Bob is load-bearing, not decorative: every alert is reviewed by four headless Bob Shell
+    agents that can act only through a least-privilege MCP harness, and the Observability view
+    shows every tool call, including calls the harness rejects (FORBIDDEN_TOOL); every Bob
+    touchpoint is listed in docs/ibm-bob-usage.md. The engine does
+    the maths and the agents do judgement, so every number in a brief traces back to a logged
+    tool call, and the adversarial Skeptic removes about 40% of engine alerts on a calm map while
+    confirming the planted hotspot.
 
   known_limitations: >                 # Optional but recommended — be honest about gaps
-    Replace with any known limitations, incomplete features,
-    or shortcuts taken due to time constraints.
+    The event stream is simulated (calibrated to public aggregates) and labelled as such; the
+    thresholds are tuned on the synthetic scenario only. A four-agent Bob review takes about
+    3–5 minutes, so reviews trail the live map. Single machine, no login. The system predicts
+    places, never people, by design.
 
 # =============================================================================
 # ARTIFACT LOCATIONS

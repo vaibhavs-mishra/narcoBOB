@@ -12,10 +12,10 @@ spirit to public aggregates) and labelled as such everywhere. The pipeline is re
 
 | Field | Value |
 |---|---|
-| **Team Name** | _to be filled at submission_ |
+| **Team Name** | BOB |
 | **Track** | AI |
-| **Team Lead** | _to be filled at submission_ |
-| **Members** | _to be filled at submission_ |
+| **Team Lead** | Vaibhav Shankar Mishra |
+| **Members** | Pranjal Kumar Singh, Sahil Jain, Parinit Sinha |
 
 ---
 
@@ -56,9 +56,32 @@ live into a dark command-centre UI. More: [docs/solution-overview.md](docs/solut
   its verdict is the final severity. It removes ~40% of engine alerts on a calm map and
   confirms the planted hotspot.
 - **Real-time command centre:** live 3D hexagon map, alert feed (engine → Skeptic
-  severity), cell evidence drawer, agent swim-lanes with live tool calls, and briefs.
+  severity), cell evidence with an expandable event chart, agent swim-lanes with live tool
+  calls, and briefs. An **Observability** view shows every agent step, MCP tool call
+  (including rejected ones) and finding, plus each step's raw Bob Shell console. Panels
+  resize, drag, float or pop out; **?** explains every part of the screen.
 - **Never a single point of failure:** deterministic fallback agents with identical
   schemas (`make dev-fallback`), and replay of a recorded real Bob session (`make replay`).
+
+---
+
+## 🤖 Where IBM Bob Is Used
+
+Full list with links: [docs/ibm-bob-usage.md](docs/ibm-bob-usage.md).
+
+- **The agents are Bob:** four Bob Shell custom modes (`src/agents/.bob/custom_modes.yaml`),
+  per-mode rules (`rules-narcobob-*/`), shared agent rules (`src/agents/AGENTS.md`) and the
+  MCP connection (`mcp.json`). The modes have the `mcp` tool group only.
+- **Bob runs every alert review:** the orchestrator starts `bob run --mode narcobob-<agent>`
+  headless for Steward → Analyst → Skeptic → Writer (`narcobob/orchestrator/bob_runner.py`,
+  `worker.py`), checks each result, retries, and only then falls back.
+- **Bob acts only through the MCP harness:** 10 tools, per-agent allowlists, budgets and
+  tracing (`narcobob/harness/`); results arrive only via `submit_findings` / `submit_report`.
+- **You can watch Bob work:** the BOB status light, *IBM Bob* tags on each agent step, the
+  Observability view (every tool call, including rejected ones, and each step's Bob Shell
+  console), and briefs labelled "written by IBM Bob agents".
+- **Proof it runs:** `make bob-smoke`, `make bob-run`, `make dev`, and `make replay` (a
+  recorded real Bob session, shown in the demo video).
 
 ---
 
@@ -68,7 +91,7 @@ live into a dark command-centre UI. More: [docs/solution-overview.md](docs/solut
 |---|---|
 | **Languages** | Python 3.12, TypeScript |
 | **Frameworks** | FastAPI, asyncio, Pydantic v2, NumPy, h3 v4, MCP Python SDK (FastMCP); React 19, Vite, Blueprint.js, deck.gl, MapLibre, Zustand, Recharts |
-| **IBM Technologies** | **IBM Bob Shell** (four headless custom modes as the agent runtime, project `.bob/` config, MCP integration) |
+| **IBM Technologies** | **IBM Bob Shell** (four headless custom modes as the agent runtime, project `.bob/` config, MCP integration); see [docs/ibm-bob-usage.md](docs/ibm-bob-usage.md) |
 | **Databases** | SQLite (WAL mode) |
 | **Other** | uv, honcho, pytest, ruff, mypy, oxlint, CARTO dark-matter basemap (OpenStreetMap data) |
 

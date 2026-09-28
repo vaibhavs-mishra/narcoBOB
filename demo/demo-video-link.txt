@@ -1,15 +1,14 @@
-https://youtu.be/your-demo-video-link-here
+TODO-PASTE-VIDEO-URL (upload demo/narcobob-demo.mp4 to YouTube unlisted / Drive and put the link on this line)
 
-Replace the URL above with a link to your demo video.
+Video: 3 min 52 s, no audio.
 
-Accepted platforms:
-  - YouTube (public or unlisted)
-  - Loom (https://www.loom.com/share/...)
-  - IBM Box (https://ibm.box.com/s/...)
-  - Google Drive (set to "Anyone with the link can view")
-
-Video requirements:
-  - Length: 3–5 minutes maximum
-  - Must show the application running (not just slides)
-  - Should walk through at least one key feature end-to-end
-  - Audio narration strongly recommended
+What it shows: a recorded real IBM Bob Shell session played back through the full UI
+(`make replay`), at 1.5x speed. The event feed is simulated; the pipeline and the Bob
+agents' work are real.
+  0:00  Help mode: the "?" markers explain each part of the screen
+  0:25  The first alerts arrive; a cell's evidence and its expandable event chart
+  0:55  Observability: the four Bob agents' steps, MCP tool calls and findings stream in,
+        with each step's raw Bob Shell console output
+  2:20  Panels float over the page and the layout resets
+  2:40  The Skeptic's verdicts land: one CONFIRMED, two DOWNGRADED, with its five checks
+  3:40  The Intel Writer's brief, "written by IBM Bob agents"

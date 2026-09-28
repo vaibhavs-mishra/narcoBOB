@@ -58,7 +58,7 @@ graph LR
 | API (`narcobob/api`) | FastAPI, asyncio | Ingest, scoring loop, alert engine, REST read models, WebSocket hub, JSONL recorder, simulator proxy |
 | Engine (`narcobob/engine`) | NumPy, h3 v4 (pure functions, `mypy --strict`) | Cell universe, smoothing, acceleration, divergence, spillover, Getis-Ord Gi\*, robust z, composite score, severity, Dirichlet sensitivity, data-quality checks |
 | Tool harness (`narcobob/harness`) | Official MCP Python SDK (FastMCP, streamable HTTP) | 10 tools; per-agent allowlist; active-step authorisation; 40-call budget; 32 KB response cap; idempotent submits; every call traced to `tool_calls`; evidence recomputed as of each alert |
-| Agents (`src/agents/`) | **IBM Bob Shell** custom modes | `custom_modes.yaml` (4 modes, MCP tool group only), per-mode rules, shared `AGENTS.md`, `mcp.json` |
+| Agents (`src/agents/`) | **IBM Bob Shell** custom modes | `custom_modes.yaml` (4 modes, MCP tool group only), per-mode rules, shared `AGENTS.md`, `mcp.json`. Every Bob touchpoint: [ibm-bob-usage.md](ibm-bob-usage.md) |
 | Orchestrator (`narcobob/orchestrator`) | asyncio subprocesses | Deterministic state machine; runs `bob run --mode …` headless (argument list, no shell); verifies output; retry; fallback; applies verdicts; streams agent activity |
 | Fallback agents | Python + Jinja2 | Rule-based Steward/Analyst/Skeptic/Writer using the same tools; schema-identical outputs |
 | Storage | SQLite, WAL mode | Single file; the agents' shared blackboard |

@@ -198,6 +198,17 @@ export interface Run {
   report?: Report | null;
 }
 
+/** Observability view: each step's raw console output plus every tool call of a run. */
+export interface StepLog extends Step {
+  log: string | null; // written when the step ends
+}
+
+export interface RunLog {
+  run_id: string;
+  steps: StepLog[];
+  tool_calls: ToolCallMsg[]; // oldest first
+}
+
 // ── WebSocket ────────────────────────────────────────────────────────────────
 
 export interface TickerEvent {

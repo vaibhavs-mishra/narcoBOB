@@ -320,6 +320,14 @@ def run_detail(run_id: str) -> dict[str, Any]:
     return found
 
 
+@app.get("/api/runs/{run_id}/log")
+def run_log(run_id: str) -> dict[str, Any]:
+    found = queries.run_log(_db(), run_id)
+    if found is None:
+        raise HTTPException(404, "run not found")
+    return found
+
+
 @app.get("/api/reports/{run_id}")
 def report(run_id: str) -> dict[str, Any]:
     found = queries.report(_db(), run_id)

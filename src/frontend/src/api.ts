@@ -1,5 +1,5 @@
 // REST client. Every number the UI shows comes from here or from the WebSocket.
-import type { CellDetail, Health, Report, Run, SimStatus, Snapshot, Timeseries } from "./contracts";
+import type { CellDetail, Health, Report, Run, RunLog, SimStatus, Snapshot, Timeseries } from "./contracts";
 
 export const API_URL: string = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 export const WS_URL: string = import.meta.env.VITE_WS_URL ?? "ws://localhost:8000/ws";
@@ -30,6 +30,7 @@ export const api = {
   timeseries: (cell: string, buckets = 28) =>
     get<Timeseries>(`/api/cells/${cell}/timeseries?buckets=${buckets}`),
   run: (runId: string) => get<Run>(`/api/runs/${runId}`),
+  runLog: (runId: string) => get<RunLog>(`/api/runs/${runId}/log`),
   report: (runId: string) => get<Report>(`/api/reports/${runId}`),
   surge: (injectionId: string) => post<SimStatus>("/api/sim/surge", { injection_id: injectionId }),
   simStart: () => post<SimStatus>("/api/sim/start"),

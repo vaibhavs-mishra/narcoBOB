@@ -159,6 +159,33 @@ def full_run(state: AppState, run_id: str) -> dict[str, Any] | None:
     }  # fmt: skip
 
 
+def run_log(state: AppState, run_id: str) -> dict[str, Any] | None:
+    """Each step's console output and every tool call of the run, oldest first."""
+    if (
+        state.conn.execute("SELECT 1 FROM agent_runs WHERE run_id = ?", (run_id,)).fetchone()
+        is None
+    ):
+        return None
+    steps = [
+        dict(r)
+        for r in state.conn.execute(
+            "SELECT step_id, run_id, agent_id, status, source, attempt, tool_calls, log,"
+            " wall_started_at, wall_finished_at FROM agent_steps WHERE run_id = ?"
+            " ORDER BY wall_started_at",
+            (run_id,),
+        )
+    ]
+    calls = [
+        {**dict(r), "ok": bool(r["ok"])}
+        for r in state.conn.execute(
+            "SELECT run_id, step_id, agent_id, tool, ok, error_code, duration_ms, wall_at"
+            " FROM tool_calls WHERE run_id = ? ORDER BY wall_at",
+            (run_id,),
+        )
+    ]
+    return {"run_id": run_id, "steps": steps, "tool_calls": calls}
+
+
 def report(state: AppState, run_id: str) -> dict[str, Any] | None:
     r = state.conn.execute(
         "SELECT report_id, run_id, markdown, recommendations, provenance_ratio, source, wall_at"

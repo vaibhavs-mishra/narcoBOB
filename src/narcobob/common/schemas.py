@@ -384,4 +384,27 @@ class Run(_Model):
     report: Report | None = None
 
 
+class StepLog(Step):
+    log: str | None = None  # raw agent console output, written when the step ends
+
+
+class ToolCallRecord(_Model):
+    run_id: str | None
+    step_id: str | None
+    agent_id: AgentId | None
+    tool: str
+    ok: bool
+    error_code: str | None = None
+    duration_ms: int
+    wall_at: str
+
+
+class RunLog(_Model):
+    """Observability view: what each agent step printed and every tool call it made."""
+
+    run_id: str
+    steps: list[StepLog]
+    tool_calls: list[ToolCallRecord]
+
+
 CellDetail.model_rebuild()

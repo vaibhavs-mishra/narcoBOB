@@ -15,12 +15,13 @@ from pathlib import Path
 
 import pytest
 
-from narcobob.api import pipeline
+from narcobob.api import pipeline, queries
 from narcobob.api.alerts import AlertEngine
 from narcobob.api.ingest import ingest
 from narcobob.api.state import AppState
 from narcobob.api.ws import Hub
 from narcobob.common.config import SRC_DIR, get_settings
+from narcobob.common.schemas import RunLog
 from narcobob.engine.cells import CellGrid
 from narcobob.orchestrator.worker import Worker
 from narcobob.simulator.generator import Generator
@@ -112,3 +113,9 @@ async def test_demo_scenario_end_to_end(state: AppState) -> None:
     assert all(s["status"] == "fallback" and s["tool_calls"] > 0 for s in steps)
     failed_calls = conn.execute("SELECT tool, error_code FROM tool_calls WHERE ok = 0").fetchall()
     assert [dict(c) for c in failed_calls] == []
+
+    # the observability log shows each run's four steps and all of its tool calls
+    run_log = RunLog.model_validate(queries.run_log(state, runs[0]))
+    assert [s.agent_id for s in run_log.steps] == ["steward", "analyst", "skeptic", "writer"]
+    assert len(run_log.tool_calls) == sum(s.tool_calls for s in run_log.steps)
+    assert queries.run_log(state, "no-such-run") is None

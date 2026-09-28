@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip as ChartTooltip, XAxis, YAxis } from "recharts";
 import { api } from "../api";
 import type { CellDetail, Driver, Timeseries } from "../contracts";
+import { revealPanel } from "../layout/layouts";
 import { useStore } from "../store";
 import { driverLabel, severityColor, tokens, verdictIntent } from "../theme";
 
@@ -104,19 +105,19 @@ export function CellDrawer() {
 
   if (!cell) {
     return (
-      <aside className="panel drawer">
+      <div className="drawer">
         <NonIdealState icon="select" title="No cell selected" description="Click a hexagon or an alert." />
-      </aside>
+      </div>
     );
   }
-  if (error) return <aside className="panel drawer"><Callout intent="danger">{error}</Callout></aside>;
-  if (!detail || detail.cell !== cell) return <aside className="panel drawer"><div className="muted pad">Loading…</div></aside>;
+  if (error) return <div className="drawer"><Callout intent="danger">{error}</Callout></div>;
+  if (!detail || detail.cell !== cell) return <div className="drawer"><div className="muted pad">Loading…</div></div>;
 
   const final = detail.final_severity ?? null;
   const v = detail.latest_verdict;
   const reportRun = detail.alerts.find((a) => a.run_id && a.verdict)?.run_id ?? null;
   return (
-    <aside className="panel drawer">
+    <div className="drawer">
       <div className="drawer-head">
         <div>
           <div className="mono cell-title">{detail.cell}</div>
@@ -151,7 +152,7 @@ export function CellDrawer() {
               <span key={k} className={`check check-${r}`}>{k.replace("_", " ")} · {r}</span>
             ))}
           </div>
-          {reportRun && <Button small icon="document" text="Open brief" onClick={() => openReport(reportRun)} />}
+          {reportRun && <Button small icon="document" text="Open brief" onClick={() => { openReport(reportRun); revealPanel("brief"); }} />}
         </div>
       ) : (
         <div className="muted small">Not reviewed yet. Agents review a cell after it alerts.</div>
@@ -165,6 +166,6 @@ export function CellDrawer() {
           </button>
         ))}
       </div>
-    </aside>
+    </div>
   );
 }

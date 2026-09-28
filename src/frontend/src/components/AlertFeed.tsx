@@ -63,10 +63,10 @@ export function AlertFeed() {
     return () => window.clearInterval(id);
   }, []);
   return (
-    <section className="panel alert-feed">
-      <h2 className="panel-title">
-        Alerts <span className="muted mono">{alerts.length}</span>
-      </h2>
+    <div className="alert-feed">
+      <div className="panel-sub muted small">
+        <span className="mono">{alerts.length}</span> alert{alerts.length === 1 ? "" : "s"} · newest first
+      </div>
       <div className="scroll">
         {alerts.length === 0 ? (
           <NonIdealState icon="shield" title="No alerts" description="Cells alert when they enter HIGH or CRITICAL." />
@@ -74,6 +74,6 @@ export function AlertFeed() {
           alerts.map((a) => <AlertRow key={a.alert_id} a={a} now={now} />)
         )}
       </div>
-    </section>
+    </div>
   );
 }

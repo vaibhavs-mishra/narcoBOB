@@ -1,6 +1,7 @@
 import { Button, HTMLSelect, NonIdealState, Tag, Tooltip } from "@blueprintjs/core";
 import { useEffect, useState } from "react";
 import { AGENT_IDS, type AgentId } from "../contracts";
+import { revealPanel } from "../layout/layouts";
 import { useStore, type LaneState } from "../store";
 import { agentLabel } from "../theme";
 
@@ -66,7 +67,7 @@ export function AgentLanes() {
           options={order.map((id) => ({ value: id, label: `run …${id.slice(-6)} · ${runs[id]?.summary.status ?? ""}` }))} />
         <span className="muted small">{s.cells.length} cell(s) · {end - t0 < 1000 ? "<1" : Math.round((end - t0) / 1000)} s</span>
         <Tag minimal intent={s.status === "DONE" ? "success" : s.status === "RUNNING" ? "primary" : s.status === "QUEUED" ? "none" : "warning"}>{s.status}</Tag>
-        {run.reportReady && <Button small icon="document" text="Open brief" onClick={() => openReport(s.run_id)} />}
+        {run.reportReady && <Button small icon="document" text="Open brief" onClick={() => { openReport(s.run_id); revealPanel("brief"); }} />}
       </div>
       {AGENT_IDS.map((a) => <Lane key={a} agent={a} lane={run.lanes[a]} t0={t0} span={span} />)}
     </div>

@@ -30,11 +30,23 @@ export interface LaneState {
   findings: FindingPostedMsg[];
 }
 
+/** One line of the observability view's agent log. */
+export interface LogEntry {
+  at: string; // wall-clock ISO time
+  agent_id: AgentId | null;
+  kind: "run" | "step" | "tool" | "finding";
+  text: string;
+  ok: boolean;
+}
+
 export interface RunView {
   summary: RunSummary;
   lanes: Record<AgentId, LaneState>;
   reportReady: boolean;
+  log: LogEntry[]; // live entries from the WebSocket, oldest first
 }
+
+export type View = "command" | "observability";
 
 const emptyLane = (): LaneState => ({ status: "idle", source: null, attempt: 0, calls: [], findings: [] });
 const emptyLanes = (): Record<AgentId, LaneState> => ({
@@ -61,21 +73,30 @@ interface State {
   ticker: TickerEvent[];
   pings: Ping[];
   selectedCell: string | null;
-  bottomTab: "agents" | "report" | "ticker";
   reportRunId: string | null;
+  view: View;
+  helpMode: boolean;
 
   applySnapshot: (s: Snapshot) => void;
   applyMessage: (m: WsMessage) => void;
   setConnected: (c: boolean, mode?: "live" | "replay") => void;
   setHealth: (h: Health | null) => void;
   select: (cell: string | null) => void;
-  setBottomTab: (t: State["bottomTab"]) => void;
+  setView: (v: View) => void;
+  setHelpMode: (on: boolean) => void;
   openReport: (runId: string) => void;
   focusRun: (runId: string) => void;
 }
 
 let pingId = 0;
 const PING_TTL_MS = 2500;
+const LOG_CAP = 1000;
+
+function appendLog(state: State, runId: string, entry: LogEntry): Pick<State, "runs"> | null {
+  const run = state.runs[runId];
+  if (!run) return null;
+  return { runs: { ...state.runs, [runId]: { ...run, log: [...run.log, entry].slice(-LOG_CAP) } } };
+}
 
 function upsertAlert(alerts: Alert[], a: Alert): Alert[] {
   const rest = alerts.filter((x) => x.alert_id !== a.alert_id);
@@ -90,12 +111,20 @@ function withRun(state: State, summary: RunSummary): Pick<State, "runs" | "runOr
   }
   const runs = {
     ...state.runs,
-    [summary.run_id]: { summary, lanes, reportReady: existing?.reportReady ?? false },
+    [summary.run_id]: { summary, lanes, reportReady: existing?.reportReady ?? false, log: existing?.log ?? [] },
   };
   const runOrder = state.runOrder.includes(summary.run_id)
     ? state.runOrder
     : [summary.run_id, ...state.runOrder].slice(0, 20);
   return { runs, runOrder };
+}
+
+/** A tool call as a log line; shared by the live path and the REST backfill. */
+export function toolEntry(c: ToolCallMsg): LogEntry {
+  return {
+    at: c.wall_at, agent_id: c.agent_id, kind: "tool", ok: c.ok,
+    text: `${c.tool} ${c.ok ? "✓" : `✗ ${c.error_code ?? "error"}`} · ${c.duration_ms} ms`,
+  };
 }
 
 export const useStore = create<State>((set) => ({
@@ -115,8 +144,9 @@ export const useStore = create<State>((set) => ({
   ticker: [],
   pings: [],
   selectedCell: null,
-  bottomTab: "agents",
   reportRunId: null,
+  view: "command",
+  helpMode: false,
 
   applySnapshot: (s) =>
     set((state) => {
@@ -163,7 +193,13 @@ export const useStore = create<State>((set) => ({
         case "run.started":
         case "run.finished": {
           const focus = m.type === "run.started" ? m.payload.run_id : state.focusRunId ?? m.payload.run_id;
-          return { ...next, ...withRun(state, m.payload), focusRunId: focus };
+          const withSummary = { ...state, ...withRun(state, m.payload) };
+          const cells = m.payload.cells.length;
+          const logged = appendLog(withSummary, m.payload.run_id, {
+            at: m.wall_ts, agent_id: null, kind: "run", ok: m.payload.status !== "FAILED_WITH_FALLBACK",
+            text: `run ${m.type.slice(4)} · ${m.payload.status} · ${cells} cell${cells === 1 ? "" : "s"}`,
+          });
+          return { ...next, runOrder: withSummary.runOrder, ...(logged ?? { runs: withSummary.runs }), focusRunId: focus };
         }
         case "agent.step": {
           const run = state.runs[m.payload.run_id];
@@ -173,7 +209,12 @@ export const useStore = create<State>((set) => ({
             ...run.lanes,
             [m.payload.agent_id]: { ...lane, status: m.payload.status, source: m.payload.source ?? lane.source, attempt: m.payload.attempt },
           };
-          return { ...next, runs: { ...state.runs, [m.payload.run_id]: { ...run, lanes } } };
+          const p = m.payload;
+          const entry: LogEntry = {
+            at: m.wall_ts, agent_id: p.agent_id, kind: "step", ok: p.status !== "failed",
+            text: `step ${p.status}${p.source ? ` · ${p.source === "bob" ? "IBM Bob" : "fallback"}` : ""}${p.attempt > 1 ? ` · attempt ${p.attempt}` : ""}`,
+          };
+          return { ...next, runs: { ...state.runs, [p.run_id]: { ...run, lanes, log: [...run.log, entry].slice(-LOG_CAP) } } };
         }
         case "agent.tool_call": {
           const run = state.runs[m.payload.run_id];
@@ -181,19 +222,26 @@ export const useStore = create<State>((set) => ({
           const lane = run.lanes[m.payload.agent_id];
           if (!lane) return next;
           const lanes = { ...run.lanes, [m.payload.agent_id]: { ...lane, calls: [...lane.calls, m.payload] } };
-          return { ...next, runs: { ...state.runs, [m.payload.run_id]: { ...run, lanes } } };
+          const log = [...run.log, toolEntry(m.payload)].slice(-LOG_CAP);
+          return { ...next, runs: { ...state.runs, [m.payload.run_id]: { ...run, lanes, log } } };
         }
         case "finding.posted": {
           const run = state.runs[m.payload.run_id];
           if (!run) return next;
           const lane = run.lanes[m.payload.agent_id];
           const lanes = { ...run.lanes, [m.payload.agent_id]: { ...lane, findings: [...lane.findings, m.payload] } };
-          return { ...next, runs: { ...state.runs, [m.payload.run_id]: { ...run, lanes } } };
+          const p = m.payload;
+          const entry: LogEntry = {
+            at: m.wall_ts, agent_id: p.agent_id, kind: "finding", ok: true,
+            text: `${p.kind}${p.cell ? ` · ${p.cell}` : ""} · ${p.summary}`,
+          };
+          return { ...next, runs: { ...state.runs, [p.run_id]: { ...run, lanes, log: [...run.log, entry].slice(-LOG_CAP) } } };
         }
         case "report.ready": {
           const run = state.runs[m.payload.run_id];
           if (!run) return next;
-          return { ...next, runs: { ...state.runs, [m.payload.run_id]: { ...run, reportReady: true } } };
+          const entry: LogEntry = { at: m.wall_ts, agent_id: "writer", kind: "run", ok: true, text: "brief published" };
+          return { ...next, runs: { ...state.runs, [m.payload.run_id]: { ...run, reportReady: true, log: [...run.log, entry] } } };
         }
         case "sim.status":
           return { ...next, sim: m.payload };
@@ -205,8 +253,9 @@ export const useStore = create<State>((set) => ({
   setConnected: (connected, mode) => set(mode ? { connected, mode } : { connected }),
   setHealth: (health) => set({ health }),
   select: (selectedCell) => set({ selectedCell }),
-  setBottomTab: (bottomTab) => set({ bottomTab }),
-  openReport: (reportRunId) => set({ reportRunId, bottomTab: "report" }),
-  focusRun: (focusRunId) => set({ focusRunId, bottomTab: "agents" }),
+  setView: (view) => set({ view }),
+  setHelpMode: (helpMode) => set({ helpMode }),
+  openReport: (reportRunId) => set({ reportRunId }),
+  focusRun: (focusRunId) => set({ focusRunId }),
 }));
 
